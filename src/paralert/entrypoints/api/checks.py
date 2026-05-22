@@ -1,12 +1,10 @@
-import asyncio
-
 from fastapi import APIRouter, BackgroundTasks, Depends
 
 from paralert.application.check_conditions import CheckConditionsUseCase
 from paralert.domain.ports import CheckResultRepository
 
 from .deps import get_check_conditions_use_case, get_results_repo
-from .schemas import CheckResultRead
+from .schemas import CalmSlotRead, CheckResultRead, WindSlotRead
 
 router = APIRouter(prefix="/checks", tags=["checks"])
 
@@ -26,7 +24,22 @@ def get_last_results(repo: CheckResultRepository = Depends(get_results_repo)):
         CheckResultRead(
             summit_id=r.summit_id,
             target_date=r.target_date,
-            calm_hours=list(r.calm_hours),
+            calm_slots=[
+                CalmSlotRead(
+                    start_hour=s.start_hour,
+                    end_hour=s.end_hour,
+                    wind_by_altitude=[
+                        WindSlotRead(
+                            altitude_m=w.altitude_m,
+                            mean_speed_kmh=w.mean_speed_kmh,
+                            max_speed_kmh=w.max_speed_kmh,
+                            mean_direction_deg=w.mean_direction_deg,
+                        )
+                        for w in s.wind_by_altitude
+                    ],
+                )
+                for s in r.calm_slots
+            ],
             max_wind_kmh=r.max_wind_kmh,
             checked_at=r.checked_at,
         )

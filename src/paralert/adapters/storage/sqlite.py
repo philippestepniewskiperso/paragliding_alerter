@@ -1,8 +1,7 @@
 import json
 import sqlite3
-from datetime import datetime, timezone
 
-from paralert.domain.models import CheckResult, Settings, Summit
+from paralert.domain.models import CalmSlot, CheckResult, Settings, Summit, WindSlot
 from paralert.domain.ports import CheckResultRepository, SettingsRepository, SummitRepository
 
 SCHEMA = """
@@ -25,7 +24,7 @@ CREATE TABLE IF NOT EXISTS check_results (
     checked_at   TEXT    NOT NULL,
     summit_id    INTEGER NOT NULL REFERENCES summits(id) ON DELETE CASCADE,
     target_date  TEXT    NOT NULL,
-    calm_hours   TEXT    NOT NULL,
+    calm_slots   TEXT    NOT NULL,
     max_wind_kmh REAL    NOT NULL
 );
 """
@@ -35,6 +34,12 @@ SETTINGS_DEFAULTS = {
     "ntfy_topic": "paralert",
     "wind_calm_kmh": "15",
     "cron_expression": "0 6 * * *",
+    "season_start": "04-15",
+    "season_end": "11-15",
+    "require_no_snow": "true",
+    "only_off_peak": "false",
+    "timezone": "Europe/Paris",
+    "cloud_cover_max_pct": "50",
 }
 
 
@@ -48,8 +53,25 @@ def _connect(db_path: str) -> sqlite3.Connection:
 def init_db(db_path: str) -> None:
     with _connect(db_path) as conn:
         conn.executescript(SCHEMA)
+        _migrate(conn)
         for key, value in SETTINGS_DEFAULTS.items():
             conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (key, value))
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(check_results)").fetchall()]
+    if "calm_hours" in cols:
+        conn.execute("DROP TABLE check_results")
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS check_results (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                checked_at   TEXT    NOT NULL,
+                summit_id    INTEGER NOT NULL REFERENCES summits(id) ON DELETE CASCADE,
+                target_date  TEXT    NOT NULL,
+                calm_slots   TEXT    NOT NULL,
+                max_wind_kmh REAL    NOT NULL
+            );
+        """)
 
 
 def _row_to_summit(row: sqlite3.Row) -> Summit:
@@ -63,17 +85,44 @@ def _row_to_summit(row: sqlite3.Row) -> Summit:
     )
 
 
+def _calm_slots_to_json(slots: tuple[CalmSlot, ...]) -> str:
+    return json.dumps([
+        {
+            "start_hour": s.start_hour,
+            "end_hour": s.end_hour,
+            "wind_by_altitude": [
+                {"altitude_m": w.altitude_m, "mean_speed_kmh": w.mean_speed_kmh,
+                 "max_speed_kmh": w.max_speed_kmh, "mean_direction_deg": w.mean_direction_deg}
+                for w in s.wind_by_altitude
+            ],
+        }
+        for s in slots
+    ])
+
+
+def _json_to_calm_slots(raw: str) -> tuple[CalmSlot, ...]:
+    return tuple(
+        CalmSlot(
+            start_hour=s["start_hour"],
+            end_hour=s["end_hour"],
+            wind_by_altitude=tuple(
+                WindSlot(altitude_m=w["altitude_m"], mean_speed_kmh=w["mean_speed_kmh"],
+                         max_speed_kmh=w["max_speed_kmh"], mean_direction_deg=w["mean_direction_deg"])
+                for w in s["wind_by_altitude"]
+            ),
+        )
+        for s in json.loads(raw)
+    )
+
+
 class SqliteSummitRepository(SummitRepository):
     def __init__(self, db_path: str):
         self._db_path = db_path
 
     def list(self, *, enabled_only: bool = False) -> list[Summit]:
-        query = "SELECT * FROM summits"
-        params: tuple = ()
-        if enabled_only:
-            query += " WHERE enabled = 1"
+        query = "SELECT * FROM summits" + (" WHERE enabled = 1" if enabled_only else "")
         with _connect(self._db_path) as conn:
-            return [_row_to_summit(r) for r in conn.execute(query, params)]
+            return [_row_to_summit(r) for r in conn.execute(query)]
 
     def get(self, id: int) -> Summit:
         with _connect(self._db_path) as conn:
@@ -118,6 +167,12 @@ class SqliteSettingsRepository(SettingsRepository):
             ntfy_topic=data["ntfy_topic"],
             wind_calm_kmh=float(data["wind_calm_kmh"]),
             cron_expression=data["cron_expression"],
+            season_start=data.get("season_start", "04-15"),
+            season_end=data.get("season_end", "11-15"),
+            require_no_snow=data.get("require_no_snow", "true").lower() == "true",
+            only_off_peak=data.get("only_off_peak", "false").lower() == "true",
+            timezone=data.get("timezone", "Europe/Paris"),
+            cloud_cover_max_pct=float(data.get("cloud_cover_max_pct", "50")),
         )
 
     def save(self, settings: Settings) -> None:
@@ -126,12 +181,15 @@ class SqliteSettingsRepository(SettingsRepository):
             "ntfy_topic": settings.ntfy_topic,
             "wind_calm_kmh": str(settings.wind_calm_kmh),
             "cron_expression": settings.cron_expression,
+            "season_start": settings.season_start,
+            "season_end": settings.season_end,
+            "require_no_snow": str(settings.require_no_snow).lower(),
+            "only_off_peak": str(settings.only_off_peak).lower(),
+            "timezone": settings.timezone,
+            "cloud_cover_max_pct": str(settings.cloud_cover_max_pct),
         }
         with _connect(self._db_path) as conn:
-            conn.executemany(
-                "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-                pairs.items(),
-            )
+            conn.executemany("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", pairs.items())
 
 
 class SqliteCheckResultRepository(CheckResultRepository):
@@ -141,8 +199,8 @@ class SqliteCheckResultRepository(CheckResultRepository):
     def save(self, result: CheckResult) -> None:
         with _connect(self._db_path) as conn:
             conn.execute(
-                "INSERT INTO check_results (checked_at, summit_id, target_date, calm_hours, max_wind_kmh) VALUES (?, ?, ?, ?, ?)",
-                (result.checked_at, result.summit_id, result.target_date, json.dumps(list(result.calm_hours)), result.max_wind_kmh),
+                "INSERT INTO check_results (checked_at, summit_id, target_date, calm_slots, max_wind_kmh) VALUES (?, ?, ?, ?, ?)",
+                (result.checked_at, result.summit_id, result.target_date, _calm_slots_to_json(result.calm_slots), result.max_wind_kmh),
             )
 
     def last_by_summit(self) -> list[CheckResult]:
@@ -155,13 +213,13 @@ class SqliteCheckResultRepository(CheckResultRepository):
                     FROM check_results
                     GROUP BY summit_id
                 ) latest ON cr.summit_id = latest.summit_id AND cr.checked_at = latest.max_checked
-                ORDER BY cr.summit_id
+                ORDER BY cr.summit_id, cr.target_date
             """).fetchall()
         return [
             CheckResult(
                 summit_id=r["summit_id"],
                 target_date=r["target_date"],
-                calm_hours=tuple(json.loads(r["calm_hours"])),
+                calm_slots=_json_to_calm_slots(r["calm_slots"]),
                 max_wind_kmh=r["max_wind_kmh"],
                 checked_at=r["checked_at"],
             )

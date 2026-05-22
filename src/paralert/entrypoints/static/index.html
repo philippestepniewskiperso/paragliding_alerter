@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paralert</title>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f5;
+      --surface: #ffffff;
+      --border: #e0e0e0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --danger: #dc2626;
+      --danger-hover: #b91c1c;
+      --muted: #6b7280;
+      --text: #111827;
+      --green: #16a34a;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 16px; height: 56px; box-shadow: var(--shadow); }
+    header h1 { font-size: 18px; font-weight: 700; }
+    header span { font-size: 12px; color: var(--muted); }
+
+    nav { display: flex; gap: 4px; padding: 16px 24px 0; }
+    nav button { padding: 8px 16px; border: none; background: none; cursor: pointer; border-radius: var(--radius) var(--radius) 0 0; color: var(--muted); font-size: 14px; border-bottom: 2px solid transparent; }
+    nav button.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; background: var(--surface); }
+
+    main { padding: 0 24px 24px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 0 var(--radius) var(--radius) var(--radius); padding: 20px; box-shadow: var(--shadow); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: .05em; }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg); }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    .badge.on  { background: #dcfce7; color: #15803d; }
+    .badge.off { background: #f3f4f6; color: var(--muted); }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border: none; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 500; transition: background .15s; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-ghost  { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--bg); }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid transparent; }
+    .btn-danger:hover { background: #fef2f2; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .toolbar h2 { font-size: 15px; font-weight: 600; }
+
+    .form-box { margin-top: 16px; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
+    .form-box h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .form-group input, .form-group select { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--surface); }
+    .form-group input:focus, .form-group select:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
+    .form-full { grid-column: 1 / -1; }
+    .checkboxes { display: flex; gap: 16px; align-items: center; margin-top: 4px; }
+    .checkboxes label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; }
+    .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+
+    .settings-form { max-width: 560px; display: flex; flex-direction: column; gap: 14px; }
+    .settings-section { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px; }
+    .settings-section h3 { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+    .toggle-row label { font-size: 13px; }
+    .toggle { position: relative; display: inline-block; width: 36px; height: 20px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 20px; cursor: pointer; transition: background .2s; }
+    .toggle-slider:before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform .2s; }
+    .toggle input:checked + .toggle-slider { background: var(--primary); }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(16px); }
+    .flash { color: var(--green); font-size: 13px; font-weight: 500; }
+
+    .results-empty { color: var(--muted); font-size: 13px; padding: 24px; text-align: center; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .calm-hours { font-family: monospace; font-size: 12px; }
+    .no-calm { color: var(--muted); font-style: italic; font-size: 12px; }
+
+    .status-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+
+    .date-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+    .date-label { font-weight: 700; font-size: 14px; }
+    .date-label.today { color: var(--primary); }
+    .date-label.tomorrow { color: var(--green); }
+    .date-label.future { color: var(--text); }
+  </style>
+</head>
+<body x-data="app()" x-init="init()">
+
+  <header>
+    <h1>🪂 Paralert</h1>
+    <span>Alertes conditions parapente</span>
+  </header>
+
+  <nav>
+    <button :class="tab === 'summits'  ? 'active' : ''" @click="tab = 'summits'"  data-tab="summits">Sommets</button>
+    <button :class="tab === 'settings' ? 'active' : ''" @click="tab = 'settings'" data-tab="settings">Paramètres</button>
+    <button :class="tab === 'status'   ? 'active' : ''" @click="tab = 'status'"   data-tab="status">Statut</button>
+  </nav>
+
+  <main>
+
+    <!-- SOMMETS -->
+    <div class="panel" x-show="tab === 'summits'">
+      <div class="toolbar">
+        <h2>Sommets surveillés</h2>
+        <button class="btn btn-primary btn-sm" @click="openAddForm()">+ Ajouter</button>
+      </div>
+
+      <table id="summits-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Lat</th>
+            <th>Lon</th>
+            <th>Altitudes</th>
+            <th>Actif</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="s in summits" :key="s.id">
+            <tr>
+              <td x-text="s.name"></td>
+              <td x-text="s.lat"></td>
+              <td x-text="s.lon"></td>
+              <td x-text="s.altitudes_m.map(a => a + 'm').join(', ')"></td>
+              <td>
+                <button class="badge" :class="s.enabled ? 'on' : 'off'" @click="toggle(s.id)" x-text="s.enabled ? 'Actif' : 'Inactif'"></button>
+              </td>
+              <td>
+                <button class="btn btn-ghost btn-sm" @click="openEditForm(s)">Modifier</button>
+                <button class="btn btn-danger btn-sm" @click="deleteSummit(s.id)">Supprimer</button>
+              </td>
+            </tr>
+          </template>
+          <tr x-show="summits.length === 0">
+            <td colspan="6" class="results-empty">Aucun sommet configuré</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Form add/edit -->
+      <div class="form-box" x-show="showForm">
+        <h3 x-text="editingId ? 'Modifier le sommet' : 'Nouveau sommet'"></h3>
+        <div class="form-grid">
+          <div class="form-group form-full">
+            <label>Nom</label>
+            <input name="name" x-model="form.name" placeholder="Chamechaude">
+          </div>
+          <div class="form-group">
+            <label>Latitude</label>
+            <input name="lat" x-model="form.lat" placeholder="45.2833" type="number" step="any">
+          </div>
+          <div class="form-group">
+            <label>Longitude</label>
+            <input name="lon" x-model="form.lon" placeholder="5.7667" type="number" step="any">
+          </div>
+          <div class="form-group form-full">
+            <label>Altitudes surveillées</label>
+            <div class="checkboxes">
+              <label><input type="checkbox" data-alt="2000" :checked="form.altitudes_m.includes(2000)" @change="toggleAlt(2000, $event.target.checked)"> 2000 m</label>
+              <label><input type="checkbox" data-alt="3000" :checked="form.altitudes_m.includes(3000)" @change="toggleAlt(3000, $event.target.checked)"> 3000 m</label>
+              <label><input type="checkbox" data-alt="4000" :checked="form.altitudes_m.includes(4000)" @change="toggleAlt(4000, $event.target.checked)"> 4000 m</label>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" @click="closeForm()">Annuler</button>
+          <button class="btn btn-primary" @click="saveSummit()">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARAMÈTRES -->
+    <div class="panel" x-show="tab === 'settings'">
+      <div class="toolbar">
+        <h2>Paramètres</h2>
+        <span class="flash" x-show="saved" data-saved>Enregistré ✓</span>
+      </div>
+
+      <div class="settings-form" style="margin-top: 16px;">
+
+        <div class="settings-section">
+          <h3>Notifications</h3>
+          <div class="form-group">
+            <label>URL ntfy</label>
+            <input name="ntfy_url" x-model="settings.ntfy_url" placeholder="https://ntfy.sh">
+          </div>
+          <div class="form-group" style="margin-top:10px;">
+            <label>Topic ntfy</label>
+            <input name="ntfy_topic" x-model="settings.ntfy_topic" placeholder="paralert">
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Conditions météo</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Seuil vent calme (km/h)</label>
+              <input name="wind_calm_kmh" x-model.number="settings.wind_calm_kmh" type="number" step="1" min="1" max="200">
+            </div>
+            <div class="form-group">
+              <label>Couverture nuageuse max (%)</label>
+              <input name="cloud_cover_max_pct" x-model.number="settings.cloud_cover_max_pct" type="number" step="5" min="0" max="100">
+            </div>
+          </div>
+          <div class="toggle-row" style="margin-top:12px;">
+            <label>Pas de neige au sommet</label>
+            <label class="toggle">
+              <input type="checkbox" name="require_no_snow" x-model="settings.require_no_snow">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Saison active</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Début de saison (MM-JJ)</label>
+              <input name="season_start" x-model="settings.season_start" placeholder="04-15" pattern="\d{2}-\d{2}">
+            </div>
+            <div class="form-group">
+              <label>Fin de saison (MM-JJ)</label>
+              <input name="season_end" x-model="settings.season_end" placeholder="11-15" pattern="\d{2}-\d{2}">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Créneaux hors thermiques</h3>
+          <div class="toggle-row">
+            <label>Alertes uniquement avant 12h et après 17h (heure locale)</label>
+            <label class="toggle">
+              <input type="checkbox" name="only_off_peak" x-model="settings.only_off_peak">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="form-group" style="margin-top:12px;">
+            <label>Fuseau horaire</label>
+            <input name="timezone" x-model="settings.timezone" placeholder="Europe/Paris">
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Planification</h3>
+          <div class="form-group">
+            <label>Cron (heure du check)</label>
+            <input name="cron_expression" x-model="settings.cron_expression" placeholder="0 6 * * *">
+          </div>
+        </div>
+
+        <div>
+          <button class="btn btn-primary" data-action="save-settings" @click="saveSettings()">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUT -->
+    <div class="panel" x-show="tab === 'status'">
+      <div class="status-bar">
+        <h2 style="font-size:15px;font-weight:600;">Dernier check</h2>
+        <button class="btn btn-primary btn-sm" @click="triggerCheck()" :disabled="checking">
+          <span x-show="checking" class="spinner" data-checking></span>
+          <span x-text="checking ? 'Vérification…' : 'Vérifier maintenant'"></span>
+        </button>
+      </div>
+
+      <div x-show="results.length > 0">
+        <template x-for="r in results" :key="r.summit_id + '-' + r.target_date">
+          <div style="margin-bottom: 20px;">
+            <div class="date-header">
+              <strong x-text="summitName(r.summit_id)"></strong>
+              <span :class="'date-label ' + dateLabelClass(r.target_date, r.checked_at)"
+                    x-text="dateLabelText(r.target_date, r.checked_at)"></span>
+              <span x-text="r.target_date" style="color:var(--muted);font-size:12px;"></span>
+              <span x-text="'vent max journée : ' + r.max_wind_kmh.toFixed(0) + ' km/h'" style="color:var(--muted);font-size:12px;"></span>
+              <span x-text="'vérifié ' + formatDate(r.checked_at)" style="color:var(--muted);font-size:12px; margin-left:auto;"></span>
+            </div>
+
+            <div x-show="r.calm_slots.length === 0" class="no-calm" style="padding:8px 0;">Pas de créneau calme</div>
+
+            <template x-for="slot in r.calm_slots" :key="slot.start_hour">
+              <div style="margin-bottom:8px; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;">
+                <div style="background:var(--bg); padding:6px 12px; font-weight:600; font-size:13px; border-bottom:1px solid var(--border);">
+                  🕐 <span x-text="formatSlotHours(slot.start_hour, slot.end_hour, r.target_date)"></span>
+                </div>
+                <table style="margin:0;">
+                  <thead>
+                    <tr>
+                      <th>Altitude</th>
+                      <th>Moy</th>
+                      <th>Max</th>
+                      <th>Direction</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="w in slot.wind_by_altitude" :key="w.altitude_m">
+                      <tr>
+                        <td><strong x-text="w.altitude_m + ' m'"></strong></td>
+                        <td x-text="w.mean_speed_kmh.toFixed(0) + ' km/h'" class="calm-hours"></td>
+                        <td x-text="w.max_speed_kmh.toFixed(0) + ' km/h'" class="calm-hours"></td>
+                        <td x-text="degToCardinal(w.mean_direction_deg) + ' (' + w.mean_direction_deg.toFixed(0) + '°)'"></td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+
+      <div class="results-empty" x-show="results.length === 0 && !checking">
+        Aucune donnée — cliquez sur "Vérifier maintenant" pour lancer un check.
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+  const TZ = 'Europe/Paris'
+
+  function app() {
+    return {
+      tab: 'summits',
+      summits: [],
+      showForm: false,
+      editingId: null,
+      form: { name: '', lat: '', lon: '', altitudes_m: [], enabled: true },
+      settings: {
+        ntfy_url: '', ntfy_topic: '', wind_calm_kmh: 15, cron_expression: '0 6 * * *',
+        season_start: '04-15', season_end: '11-15',
+        require_no_snow: true, only_off_peak: false,
+        timezone: 'Europe/Paris', cloud_cover_max_pct: 50,
+      },
+      saved: false,
+      results: [],
+      checking: false,
+      _pollTimer: null,
+      _pollCount: 0,
+
+      async init() {
+        await Promise.all([this.loadSummits(), this.loadSettings(), this.loadResults()])
+      },
+
+      async loadSummits() {
+        const r = await fetch('/api/summits/')
+        this.summits = await r.json()
+      },
+
+      async loadSettings() {
+        const r = await fetch('/api/settings/')
+        this.settings = await r.json()
+      },
+
+      async loadResults() {
+        const r = await fetch('/api/checks/last')
+        this.results = await r.json()
+      },
+
+      openAddForm() {
+        this.editingId = null
+        this.form = { name: '', lat: '', lon: '', altitudes_m: [2000, 3000], enabled: true }
+        this.showForm = true
+      },
+
+      openEditForm(s) {
+        this.editingId = s.id
+        this.form = { name: s.name, lat: s.lat, lon: s.lon, altitudes_m: [...s.altitudes_m], enabled: s.enabled }
+        this.showForm = true
+      },
+
+      closeForm() {
+        this.showForm = false
+        this.editingId = null
+      },
+
+      toggleAlt(alt, checked) {
+        if (checked && !this.form.altitudes_m.includes(alt)) {
+          this.form.altitudes_m = [...this.form.altitudes_m, alt].sort((a, b) => a - b)
+        } else if (!checked) {
+          this.form.altitudes_m = this.form.altitudes_m.filter(a => a !== alt)
+        }
+      },
+
+      async saveSummit() {
+        const payload = {
+          name: this.form.name,
+          lat: parseFloat(this.form.lat),
+          lon: parseFloat(this.form.lon),
+          altitudes_m: this.form.altitudes_m,
+          enabled: this.form.enabled,
+        }
+        if (this.editingId) {
+          await fetch(`/api/summits/${this.editingId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        } else {
+          await fetch('/api/summits/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        }
+        this.closeForm()
+        await this.loadSummits()
+      },
+
+      async deleteSummit(id) {
+        await fetch(`/api/summits/${id}`, { method: 'DELETE' })
+        await this.loadSummits()
+      },
+
+      async toggle(id) {
+        await fetch(`/api/summits/${id}/toggle`, { method: 'PATCH' })
+        await this.loadSummits()
+      },
+
+      async saveSettings() {
+        await fetch('/api/settings/', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.settings) })
+        this.saved = true
+        setTimeout(() => { this.saved = false }, 2000)
+      },
+
+      async triggerCheck() {
+        this.checking = true
+        await fetch('/api/checks/now', { method: 'POST' })
+        this._pollCount = 0
+        this._pollTimer = setInterval(async () => {
+          this._pollCount++
+          await this.loadResults()
+          if (this._pollCount >= 5) {
+            clearInterval(this._pollTimer)
+            this.checking = false
+          }
+        }, 2000)
+      },
+
+      summitName(id) {
+        return this.summits.find(s => s.id === id)?.name ?? `#${id}`
+      },
+
+      // Convert UTC slot hours to local time string, e.g. "07h–10h (heure locale)"
+      formatSlotHours(startUtc, endUtc, date) {
+        const tz = this.settings.timezone || TZ
+        const fmt = h => {
+          const d = new Date(`${date}T${String(h).padStart(2,'0')}:00:00Z`)
+          return d.toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: tz }).replace(':', 'h')
+        }
+        return `${fmt(startUtc)} – ${fmt(endUtc)} (heure locale)`
+      },
+
+      dateLabelText(targetDate, checkedAt) {
+        const checkDay = checkedAt.slice(0, 10)
+        const diff = Math.round((new Date(targetDate) - new Date(checkDay)) / 86400000)
+        if (diff === 0) return 'Aujourd\'hui'
+        if (diff === 1) return 'Demain'
+        return `Dans ${diff} jours`
+      },
+
+      dateLabelClass(targetDate, checkedAt) {
+        const checkDay = checkedAt.slice(0, 10)
+        const diff = Math.round((new Date(targetDate) - new Date(checkDay)) / 86400000)
+        if (diff === 0) return 'today'
+        if (diff === 1) return 'tomorrow'
+        return 'future'
+      },
+
+      formatDate(iso) {
+        if (!iso) return ''
+        return new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+      },
+
+      pad(n) { return String(n).padStart(2, '0') },
+
+      degToCardinal(deg) {
+        const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO']
+        return dirs[Math.round(deg / 45) % 8]
+      },
+    }
+  }
+  </script>
+</body>
+</html>

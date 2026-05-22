@@ -17,18 +17,54 @@ class Settings:
     ntfy_topic: str
     wind_calm_kmh: float
     cron_expression: str
+    season_start: str  # "MM-DD"
+    season_end: str  # "MM-DD"
+    require_no_snow: bool
+    only_off_peak: bool
+    timezone: str  # e.g. "Europe/Paris"
+    cloud_cover_max_pct: float  # 0–100
+
+
+@dataclass(frozen=True)
+class WindHour:
+    speed_kmh: float
+    direction_deg: float
+
+
+@dataclass(frozen=True)
+class SurfaceHour:
+    cloud_cover_pct: float
+    precipitation_mm: float
+    snow_depth_m: float
 
 
 @dataclass(frozen=True)
 class WindData:
-    # {altitude_m: {iso_datetime: speed_kmh}}  e.g. {"2026-05-20T08:00": 12.5}
-    hourly: dict[int, dict[str, float]]
+    # {altitude_m: {iso_datetime: WindHour}}
+    hourly: dict[int, dict[str, WindHour]]
+    # {iso_datetime: SurfaceHour}
+    surface: dict[str, SurfaceHour]
+
+
+@dataclass(frozen=True)
+class WindSlot:
+    altitude_m: int
+    mean_speed_kmh: float
+    max_speed_kmh: float
+    mean_direction_deg: float
+
+
+@dataclass(frozen=True)
+class CalmSlot:
+    start_hour: int  # UTC (0, 3, 6, …, 21)
+    end_hour: int  # UTC exclusive (3, 6, …, 24)
+    wind_by_altitude: tuple[WindSlot, ...]
 
 
 @dataclass(frozen=True)
 class CheckResult:
     summit_id: int
-    target_date: str          # "YYYY-MM-DD"
-    calm_hours: tuple[int, ...]  # UTC hours where all altitudes are calm
-    max_wind_kmh: float
-    checked_at: str           # ISO8601
+    target_date: str  # "YYYY-MM-DD"
+    calm_slots: tuple[CalmSlot, ...]
+    max_wind_kmh: float  # max across all hours and altitudes
+    checked_at: str  # ISO8601

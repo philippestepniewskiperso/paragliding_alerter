@@ -31,6 +31,12 @@ class AppSettingsRead(BaseModel):
     ntfy_topic: str
     wind_calm_kmh: float
     cron_expression: str
+    season_start: str
+    season_end: str
+    require_no_snow: bool
+    only_off_peak: bool
+    timezone: str
+    cloud_cover_max_pct: float
 
 
 class AppSettingsUpdate(BaseModel):
@@ -38,11 +44,30 @@ class AppSettingsUpdate(BaseModel):
     ntfy_topic: str
     wind_calm_kmh: float = Field(gt=0, le=200)
     cron_expression: str
+    season_start: str
+    season_end: str
+    require_no_snow: bool
+    only_off_peak: bool
+    timezone: str
+    cloud_cover_max_pct: float = Field(ge=0, le=100)
+
+
+class WindSlotRead(BaseModel):
+    altitude_m: int
+    mean_speed_kmh: float
+    max_speed_kmh: float
+    mean_direction_deg: float
+
+
+class CalmSlotRead(BaseModel):
+    start_hour: int
+    end_hour: int
+    wind_by_altitude: list[WindSlotRead]
 
 
 class CheckResultRead(BaseModel):
     summit_id: int
     target_date: str
-    calm_hours: list[int]
+    calm_slots: list[CalmSlotRead]
     max_wind_kmh: float
     checked_at: str

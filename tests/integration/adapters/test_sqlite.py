@@ -21,6 +21,16 @@ def _summit(**kwargs) -> Summit:
     return Summit(**(defaults | kwargs))
 
 
+def _full_settings(**kwargs) -> Settings:
+    defaults = dict(
+        ntfy_url="https://ntfy.sh", ntfy_topic="paralert", wind_calm_kmh=15.0,
+        cron_expression="0 6 * * *", season_start="04-15", season_end="11-15",
+        require_no_snow=True, only_off_peak=False, timezone="Europe/Paris",
+        cloud_cover_max_pct=50.0,
+    )
+    return Settings(**(defaults | kwargs))
+
+
 class TestSummitRepository:
     def test_add_and_list(self, db):
         repo = SqliteSummitRepository(db)
@@ -65,10 +75,13 @@ class TestSettingsRepository:
         s = repo.get()
         assert s.ntfy_url == "https://ntfy.sh"
         assert s.wind_calm_kmh == 15.0
+        assert s.season_start == "04-15"
+        assert s.require_no_snow is True
+        assert s.cloud_cover_max_pct == 50.0
 
     def test_save_and_get(self, db):
         repo = SqliteSettingsRepository(db)
-        new = Settings(ntfy_url="https://custom.ntfy", ntfy_topic="my-topic", wind_calm_kmh=20.0, cron_expression="0 7 * * *")
+        new = _full_settings(ntfy_url="https://custom.ntfy", ntfy_topic="my-topic", wind_calm_kmh=20.0, cron_expression="0 7 * * *")
         repo.save(new)
         assert repo.get() == new
 
@@ -79,9 +92,9 @@ class TestCheckResultRepository:
         s = summit_repo.add(_summit())
 
         repo = SqliteCheckResultRepository(db)
-        r = CheckResult(summit_id=s.id, target_date="2026-05-20", calm_hours=(8, 9), max_wind_kmh=12.0, checked_at="2026-05-20T06:00:00+00:00")
+        r = CheckResult(summit_id=s.id, target_date="2026-05-20", calm_slots=(), max_wind_kmh=12.0, checked_at="2026-05-20T06:00:00+00:00")
         repo.save(r)
 
         last = repo.last_by_summit()
         assert len(last) == 1
-        assert last[0].calm_hours == (8, 9)
+        assert last[0].calm_slots == ()

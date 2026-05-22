@@ -4,28 +4,40 @@ from paralert.domain.models import CheckResult, Settings, Summit
 from paralert.domain.ports import NotificationPort
 
 
+_CARDINALS = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"]
+
+
+def _deg_to_cardinal(deg: float) -> str:
+    return _CARDINALS[round(deg / 45) % 8]
+
+
 class NtfyNotifier(NotificationPort):
     def __init__(self, settings_fn):
-        # settings_fn: callable() -> Settings (avoids circular dep at construction)
         self._settings_fn = settings_fn
 
     async def send(self, summit: Summit, result: CheckResult) -> None:
         settings: Settings = self._settings_fn()
 
-        if not result.calm_hours:
+        if not result.calm_slots:
             return
 
-        hour_ranges = _format_hour_ranges(result.calm_hours)
-        date_label = "Aujourd'hui" if result.target_date == result.checked_at[:10] else "Demain"
-        altitudes_str = " / ".join(f"{a}m" for a in summit.altitudes_m)
+        now_date = result.checked_at[:10]
+        date_label = "Aujourd'hui" if result.target_date == now_date else "Demain"
         windy_url = f"https://www.windy.com/?{summit.lat},{summit.lon},10"
 
-        body = (
-            f"{date_label} ({result.target_date}) : {hour_ranges} UTC\n"
-            f"Vent max : {result.max_wind_kmh:.0f} km/h\n"
-            f"Altitudes surveillées : {altitudes_str}\n"
-            f"{windy_url}"
-        )
+        lines = [
+            f"{date_label} ({result.target_date}) — {len(result.calm_slots)} créneau(x) calme(s)\n"
+        ]
+        for slot in result.calm_slots:
+            lines.append(f"  {slot.start_hour:02d}h–{slot.end_hour:02d}h UTC")
+            for w in slot.wind_by_altitude:
+                card = _deg_to_cardinal(w.mean_direction_deg)
+                lines.append(
+                    f"    {w.altitude_m}m : moy {w.mean_speed_kmh:.0f} km/h · max {w.max_speed_kmh:.0f} km/h · {card}"
+                )
+
+        lines.append(f"\n{windy_url}")
+        body = "\n".join(lines)
 
         url = f"{settings.ntfy_url.rstrip('/')}/{settings.ntfy_topic}"
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -33,25 +45,9 @@ class NtfyNotifier(NotificationPort):
                 url,
                 content=body.encode(),
                 headers={
-                    "Title": f"🪂 {summit.name} — conditions calmes",
+                    "Title": f"{summit.name} - conditions calmes",
                     "Priority": "default",
                     "Tags": "paragliding,wind",
                     "Click": windy_url,
                 },
             )
-
-
-def _format_hour_ranges(hours: tuple[int, ...]) -> str:
-    """Compress consecutive hours: (8,9,10,14) -> '08h-11h, 14h'"""
-    if not hours:
-        return ""
-    ranges: list[str] = []
-    start = prev = hours[0]
-    for h in hours[1:]:
-        if h == prev + 1:
-            prev = h
-        else:
-            ranges.append(f"{start:02d}h" if start == prev else f"{start:02d}h-{prev + 1:02d}h")
-            start = prev = h
-    ranges.append(f"{start:02d}h" if start == prev else f"{start:02d}h-{prev + 1:02d}h")
-    return ", ".join(ranges)
