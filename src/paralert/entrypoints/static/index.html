@@ -357,6 +357,8 @@
           <div class="form-group form-full">
             <label>Altitudes surveillées</label>
             <div class="checkboxes">
+              <label><input type="checkbox" data-alt="0" :checked="form.altitudes_m.includes(0)" @change="toggleAlt(0, $event.target.checked)"> 0 m</label>
+              <label><input type="checkbox" data-alt="1000" :checked="form.altitudes_m.includes(1000)" @change="toggleAlt(1000, $event.target.checked)"> 1000 m</label>
               <label><input type="checkbox" data-alt="2000" :checked="form.altitudes_m.includes(2000)" @change="toggleAlt(2000, $event.target.checked)"> 2000 m</label>
               <label><input type="checkbox" data-alt="3000" :checked="form.altitudes_m.includes(3000)" @change="toggleAlt(3000, $event.target.checked)"> 3000 m</label>
               <label><input type="checkbox" data-alt="4000" :checked="form.altitudes_m.includes(4000)" @change="toggleAlt(4000, $event.target.checked)"> 4000 m</label>
@@ -687,9 +689,14 @@
           const capitalDay = dayName.charAt(0).toUpperCase() + dayName.slice(1)
           const label = diff === 0 ? "Aujourd'hui" : diff === 1 ? `Demain (${capitalDay})` : `Dans ${diff} jours (${capitalDay})`
           const labelClass = diff === 0 ? 'today' : diff === 1 ? 'tomorrow' : 'future'
-          const totalSlots = dayResults.reduce((s, r) => s + r.calm_slots.length, 0)
+          const totalSlots = dayResults
+            .filter(r => { const s = this.summits.find(s => s.id === r.summit_id); return !s || s.enabled })
+            .reduce((s, r) => s + r.calm_slots.length, 0)
 
-          const summits = dayResults.map(r => {
+          const summits = dayResults.filter(r => {
+            const s = this.summits.find(s => s.id === r.summit_id)
+            return !s || s.enabled
+          }).map(r => {
             const summit = this.summits.find(s => s.id === r.summit_id)
             return {
               summitId: r.summit_id,

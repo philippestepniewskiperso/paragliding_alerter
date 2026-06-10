@@ -237,6 +237,7 @@ class SqliteCheckResultRepository(CheckResultRepository):
                     FROM check_results
                     GROUP BY summit_id
                 ) latest ON cr.summit_id = latest.summit_id AND cr.checked_at = latest.max_checked
+                INNER JOIN summits s ON cr.summit_id = s.id AND s.enabled = 1
                 ORDER BY cr.summit_id, cr.target_date
             """).fetchall()
         return [

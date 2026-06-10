@@ -3,7 +3,7 @@ import httpx
 from paralert.domain.models import SurfaceHour, WindData, WindHour
 from paralert.domain.ports import WeatherPort
 
-_ALTITUDE_TO_HPA: dict[int, int] = {2000: 800, 3000: 700, 4000: 600}
+_ALTITUDE_TO_HPA: dict[int, int] = {0: 1000, 1000: 900, 2000: 800, 3000: 700, 4000: 600}
 BASE_URL = "https://api.open-meteo.com/v1/forecast"
 
 
