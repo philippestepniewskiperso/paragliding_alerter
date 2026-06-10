@@ -1,0 +1,13 @@
+lockfile_version: '1'
+generated_at: '2026-05-29T13:13:02.172118+00:00'
+apm_version: 0.14.2
+dependencies:
+- repo_url: anthropics/skills
+  host: github.com
+  resolved_commit: da20c92503b2e8ff1cf28ca81a0df4673debdbf7
+  virtual_path: skills/pptx
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .agents/skills/pptx
+  content_hash: sha256:fe530e7c549627879d4b333f11330f966730054003c7f11b520b5f2e0401e8cd

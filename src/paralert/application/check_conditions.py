@@ -39,8 +39,9 @@ class CheckConditionsUseCase:
         checked_at = now.isoformat()
 
         all_results: list[CheckResult] = []
+        all_summits = self._summits.list(enabled_only=True)
 
-        for summit in self._summits.list(enabled_only=True):
+        for summit in all_summits:
             wind_data = await self._weather.fetch_wind(
                 summit.lat, summit.lon, summit.altitudes_m
             )
@@ -73,7 +74,7 @@ class CheckConditionsUseCase:
                 max_wind = max_wind_on_date(wind_data, date)
 
                 result = CheckResult(
-                    summit_id=summit.id,
+                    summit_id=summit.id,  # type: ignore[arg-type]
                     target_date=date,
                     calm_slots=calm_slots,
                     max_wind_kmh=max_wind,
@@ -82,8 +83,8 @@ class CheckConditionsUseCase:
                 self._results.save(result)
                 all_results.append(result)
 
-                if calm_slots:
-                    await self._notifier.send(summit, result)
+        if any(r.calm_slots for r in all_results):
+            await self._notifier.send_summary(all_results, all_summits, settings)
 
         return all_results
 

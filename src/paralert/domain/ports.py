@@ -4,7 +4,9 @@ from .models import CheckResult, Settings, Summit, WindData
 
 class WeatherPort(ABC):
     @abstractmethod
-    async def fetch_wind(self, lat: float, lon: float, altitudes_m: tuple[int, ...]) -> WindData: ...
+    async def fetch_wind(
+        self, lat: float, lon: float, altitudes_m: tuple[int, ...]
+    ) -> WindData: ...
 
 
 class SummitRepository(ABC):
@@ -42,4 +44,9 @@ class CheckResultRepository(ABC):
 
 class NotificationPort(ABC):
     @abstractmethod
-    async def send(self, summit: Summit, result: CheckResult) -> None: ...
+    async def send_summary(
+        self,
+        results: list[CheckResult],
+        summits: list[Summit],
+        settings: "Settings",
+    ) -> None: ...

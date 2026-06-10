@@ -15,67 +15,131 @@
       --primary: #2563eb;
       --primary-hover: #1d4ed8;
       --danger: #dc2626;
-      --danger-hover: #b91c1c;
       --muted: #6b7280;
       --text: #111827;
       --green: #16a34a;
+      --yellow: #ca8a04;
+      --green-bg: #dcfce7;
+      --yellow-bg: #fef9c3;
       --radius: 8px;
       --shadow: 0 1px 3px rgba(0,0,0,.1);
     }
 
     body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
 
-    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 16px; height: 56px; box-shadow: var(--shadow); }
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      height: 56px;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
     header h1 { font-size: 18px; font-weight: 700; }
-    header span { font-size: 12px; color: var(--muted); }
+    header .subtitle { font-size: 12px; color: var(--muted); }
 
-    nav { display: flex; gap: 4px; padding: 16px 24px 0; }
-    nav button { padding: 8px 16px; border: none; background: none; cursor: pointer; border-radius: var(--radius) var(--radius) 0 0; color: var(--muted); font-size: 14px; border-bottom: 2px solid transparent; }
+    /* ── Nav tabs ── */
+    nav {
+      display: flex;
+      gap: 4px;
+      padding: 16px 24px 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    nav button {
+      padding: 8px 16px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-radius: var(--radius) var(--radius) 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
     nav button.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; background: var(--surface); }
 
-    main { padding: 0 24px 24px; }
-    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 0 var(--radius) var(--radius) var(--radius); padding: 20px; box-shadow: var(--shadow); }
+    /* ── Main panel ── */
+    main { padding: 0 24px 40px; }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0 var(--radius) var(--radius) var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-    th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: .05em; }
-    td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: var(--bg); }
+    /* ── Toolbar ── */
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .toolbar h2 { font-size: 15px; font-weight: 600; }
 
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
-    .badge.on  { background: #dcfce7; color: #15803d; }
-    .badge.off { background: #f3f4f6; color: var(--muted); }
-
+    /* ── Buttons ── */
     .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border: none; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 500; transition: background .15s; }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-primary:hover { background: var(--primary-hover); }
+    .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
     .btn-ghost  { background: transparent; color: var(--muted); border: 1px solid var(--border); }
     .btn-ghost:hover { background: var(--bg); }
     .btn-danger { background: transparent; color: var(--danger); border: 1px solid transparent; }
     .btn-danger:hover { background: #fef2f2; }
     .btn-sm { padding: 4px 10px; font-size: 12px; }
 
-    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-    .toolbar h2 { font-size: 15px; font-weight: 600; }
+    /* ── Badges ── */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    .badge.on  { background: #dcfce7; color: #15803d; }
+    .badge.off { background: #f3f4f6; color: var(--muted); }
+    .badge.alt { background: #eff6ff; color: #1d4ed8; font-size: 11px; padding: 2px 6px; }
 
+    /* ── Desktop table ── */
+    table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: .05em; }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg); }
+
+    /* ── Summit cards (mobile) ── */
+    .summit-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .summit-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .summit-card-name { font-weight: 600; font-size: 14px; }
+    .summit-card-coords { font-size: 11px; color: var(--muted); }
+    .summit-card-alts { display: flex; gap: 4px; flex-wrap: wrap; }
+    .summit-card-actions { display: flex; gap: 6px; }
+
+    /* ── Form ── */
     .form-box { margin-top: 16px; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
     .form-box h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .form-group { display: flex; flex-direction: column; gap: 4px; }
     .form-group label { font-size: 12px; color: var(--muted); font-weight: 500; }
-    .form-group input, .form-group select { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--surface); }
+    .form-group input, .form-group select { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--surface); width: 100%; }
     .form-group input:focus, .form-group select:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
     .form-full { grid-column: 1 / -1; }
-    .checkboxes { display: flex; gap: 16px; align-items: center; margin-top: 4px; }
+    .checkboxes { display: flex; gap: 16px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
     .checkboxes label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; }
-    .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+    .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; flex-wrap: wrap; }
 
+    /* ── Settings ── */
     .settings-form { max-width: 560px; display: flex; flex-direction: column; gap: 14px; }
     .settings-section { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px; }
     .settings-section h3 { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; }
-    .toggle-row { display: flex; align-items: center; justify-content: space-between; }
-    .toggle-row label { font-size: 13px; }
-    .toggle { position: relative; display: inline-block; width: 36px; height: 20px; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .toggle-row label:first-child { font-size: 13px; }
+    .toggle { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
     .toggle input { opacity: 0; width: 0; height: 0; }
     .toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 20px; cursor: pointer; transition: background .2s; }
     .toggle-slider:before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform .2s; }
@@ -83,27 +147,108 @@
     .toggle input:checked + .toggle-slider:before { transform: translateX(16px); }
     .flash { color: var(--green); font-size: 13px; font-weight: 500; }
 
-    .results-empty { color: var(--muted); font-size: 13px; padding: 24px; text-align: center; }
-    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .6s linear infinite; }
+    /* ── Status / Results ── */
+    .results-empty { color: var(--muted); font-size: 13px; padding: 32px; text-align: center; }
+
+    .day-group { margin-bottom: 24px; }
+    .day-group-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .day-label { font-weight: 700; font-size: 15px; }
+    .day-label.today    { color: var(--primary); }
+    .day-label.tomorrow { color: var(--green); }
+    .day-label.future   { color: var(--text); }
+    .day-date { font-size: 12px; color: var(--muted); }
+
+    .summit-group { margin-bottom: 14px; }
+    .summit-group-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .summit-group-name { font-weight: 600; font-size: 14px; }
+    .summit-wind-max { font-size: 12px; color: var(--muted); }
+    .no-calm { color: var(--muted); font-style: italic; font-size: 12px; padding: 4px 0 4px 2px; }
+
+    /* Slot card */
+    .slot-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 8px; }
+    .slot-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .slot-card-header.calm-good { background: var(--green-bg); }
+    .slot-card-header.calm-ok   { background: var(--yellow-bg); }
+
+    .slot-table { width: 100%; border-collapse: collapse; }
+    .slot-table td { padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .slot-table tr:last-child td { border-bottom: none; }
+    .slot-table .alt-col { font-weight: 600; width: 72px; }
+
+    .wind-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+    .wind-calm     { background: var(--green-bg); color: #15803d; }
+    .wind-moderate { background: var(--yellow-bg); color: var(--yellow); }
+
+    /* ── Status bar ── */
+    .status-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .checked-at { font-size: 12px; color: var(--muted); }
+
+    /* ── Spinner ── */
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .calm-hours { font-family: monospace; font-size: 12px; }
-    .no-calm { color: var(--muted); font-style: italic; font-size: 12px; }
+    /* ── Toast ── */
+    .toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 100; pointer-events: none; }
+    .toast { padding: 10px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,.15); pointer-events: auto; max-width: 320px; }
+    .toast.success { background: #16a34a; color: #fff; }
+    .toast.error   { background: var(--danger); color: #fff; }
 
-    .status-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    /* ── Responsive ── */
+    .desktop-only { display: table; }
+    .mobile-only  { display: none; }
 
-    .date-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
-    .date-label { font-weight: 700; font-size: 14px; }
-    .date-label.today { color: var(--primary); }
-    .date-label.tomorrow { color: var(--green); }
-    .date-label.future { color: var(--text); }
+    @media (max-width: 640px) {
+      header { padding: 0 16px; }
+      nav { padding: 12px 16px 0; }
+      main { padding: 0 16px 40px; }
+      .panel { padding: 14px; }
+      .desktop-only { display: none; }
+      .mobile-only  { display: block; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-full { grid-column: 1; }
+      .settings-form { max-width: 100%; }
+      .toast-container { bottom: 16px; right: 16px; left: 16px; }
+      .toast { max-width: 100%; }
+      .slot-table td:nth-child(4) { display: none; }
+    }
   </style>
 </head>
 <body x-data="app()" x-init="init()">
 
   <header>
     <h1>🪂 Paralert</h1>
-    <span>Alertes conditions parapente</span>
+    <span class="subtitle">Alertes conditions parapente</span>
   </header>
 
   <nav>
@@ -114,31 +259,34 @@
 
   <main>
 
-    <!-- SOMMETS -->
+    <!-- ═══ SOMMETS ═══ -->
     <div class="panel" x-show="tab === 'summits'">
       <div class="toolbar">
         <h2>Sommets surveillés</h2>
         <button class="btn btn-primary btn-sm" @click="openAddForm()">+ Ajouter</button>
       </div>
 
-      <table id="summits-table">
+      <!-- Desktop table -->
+      <table id="summits-table" class="desktop-only">
         <thead>
           <tr>
             <th>Nom</th>
-            <th>Lat</th>
-            <th>Lon</th>
+            <th>Coordonnées</th>
             <th>Altitudes</th>
-            <th>Actif</th>
+            <th>Statut</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           <template x-for="s in summits" :key="s.id">
             <tr>
-              <td x-text="s.name"></td>
-              <td x-text="s.lat"></td>
-              <td x-text="s.lon"></td>
-              <td x-text="s.altitudes_m.map(a => a + 'm').join(', ')"></td>
+              <td style="font-weight:600;" x-text="s.name"></td>
+              <td style="font-size:12px;color:var(--muted);" x-text="s.lat + ', ' + s.lon"></td>
+              <td>
+                <template x-for="a in s.altitudes_m" :key="a">
+                  <span class="badge alt" x-text="a + 'm'" style="margin-right:3px;"></span>
+                </template>
+              </td>
               <td>
                 <button class="badge" :class="s.enabled ? 'on' : 'off'" @click="toggle(s.id)" x-text="s.enabled ? 'Actif' : 'Inactif'"></button>
               </td>
@@ -149,10 +297,33 @@
             </tr>
           </template>
           <tr x-show="summits.length === 0">
-            <td colspan="6" class="results-empty">Aucun sommet configuré</td>
+            <td colspan="5" class="results-empty">Aucun sommet configuré</td>
           </tr>
         </tbody>
       </table>
+
+      <!-- Mobile cards -->
+      <div class="mobile-only">
+        <template x-for="s in summits" :key="s.id">
+          <div class="summit-card">
+            <div class="summit-card-header">
+              <span class="summit-card-name" x-text="s.name"></span>
+              <button class="badge" :class="s.enabled ? 'on' : 'off'" @click="toggle(s.id)" x-text="s.enabled ? 'Actif' : 'Inactif'"></button>
+            </div>
+            <div class="summit-card-coords" x-text="s.lat + ', ' + s.lon"></div>
+            <div class="summit-card-alts">
+              <template x-for="a in s.altitudes_m" :key="a">
+                <span class="badge alt" x-text="a + 'm'"></span>
+              </template>
+            </div>
+            <div class="summit-card-actions">
+              <button class="btn btn-ghost btn-sm" @click="openEditForm(s)">Modifier</button>
+              <button class="btn btn-danger btn-sm" @click="deleteSummit(s.id)">Supprimer</button>
+            </div>
+          </div>
+        </template>
+        <div x-show="summits.length === 0" class="results-empty">Aucun sommet configuré</div>
+      </div>
 
       <!-- Form add/edit -->
       <div class="form-box" x-show="showForm">
@@ -186,7 +357,7 @@
       </div>
     </div>
 
-    <!-- PARAMÈTRES -->
+    <!-- ═══ PARAMÈTRES ═══ -->
     <div class="panel" x-show="tab === 'settings'">
       <div class="toolbar">
         <h2>Paramètres</h2>
@@ -243,9 +414,9 @@
         </div>
 
         <div class="settings-section">
-          <h3>Créneaux hors thermiques</h3>
+          <h3>Heures hors thermiques</h3>
           <div class="toggle-row">
-            <label>Alertes uniquement avant 12h et après 17h (heure locale)</label>
+            <label>Alertes uniquement matin (avant 12h) et soir (après 17h) — heure locale</label>
             <label class="toggle">
               <input type="checkbox" name="only_off_peak" x-model="settings.only_off_peak">
               <span class="toggle-slider"></span>
@@ -260,7 +431,7 @@
         <div class="settings-section">
           <h3>Planification</h3>
           <div class="form-group">
-            <label>Cron (heure du check)</label>
+            <label>Cron (heure du check quotidien, UTC)</label>
             <input name="cron_expression" x-model="settings.cron_expression" placeholder="0 6 * * *">
           </div>
         </div>
@@ -271,71 +442,87 @@
       </div>
     </div>
 
-    <!-- STATUT -->
+    <!-- ═══ STATUT ═══ -->
     <div class="panel" x-show="tab === 'status'">
       <div class="status-bar">
-        <h2 style="font-size:15px;font-weight:600;">Dernier check</h2>
+        <h2 style="font-size:15px;font-weight:600;">Résultats</h2>
         <button class="btn btn-primary btn-sm" @click="triggerCheck()" :disabled="checking">
           <span x-show="checking" class="spinner" data-checking></span>
           <span x-text="checking ? 'Vérification…' : 'Vérifier maintenant'"></span>
         </button>
+        <span class="checked-at" x-show="lastCheckedAt" x-text="'Dernier check : ' + formatDate(lastCheckedAt)"></span>
       </div>
 
-      <div x-show="results.length > 0">
-        <template x-for="r in results" :key="r.summit_id + '-' + r.target_date">
-          <div style="margin-bottom: 20px;">
-            <div class="date-header">
-              <strong x-text="summitName(r.summit_id)"></strong>
-              <span :class="'date-label ' + dateLabelClass(r.target_date, r.checked_at)"
-                    x-text="dateLabelText(r.target_date, r.checked_at)"></span>
-              <span x-text="r.target_date" style="color:var(--muted);font-size:12px;"></span>
-              <span x-text="'vent max journée : ' + r.max_wind_kmh.toFixed(0) + ' km/h'" style="color:var(--muted);font-size:12px;"></span>
-              <span x-text="'vérifié ' + formatDate(r.checked_at)" style="color:var(--muted);font-size:12px; margin-left:auto;"></span>
+      <!-- Résultats groupés par jour -->
+      <div x-show="groupedResults.length > 0">
+        <template x-for="dayGroup in groupedResults" :key="dayGroup.date">
+          <div class="day-group">
+            <div class="day-group-header">
+              <span :class="'day-label ' + dayGroup.labelClass" x-text="dayGroup.label"></span>
+              <span class="day-date" x-text="dayGroup.date"></span>
+              <span x-show="dayGroup.totalSlots > 0" class="badge on" x-text="dayGroup.totalSlots + ' créneau(x)'"></span>
+              <span x-show="dayGroup.totalSlots === 0" class="badge off">Aucun créneau calme</span>
             </div>
 
-            <div x-show="r.calm_slots.length === 0" class="no-calm" style="padding:8px 0;">Pas de créneau calme</div>
-
-            <template x-for="slot in r.calm_slots" :key="slot.start_hour">
-              <div style="margin-bottom:8px; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;">
-                <div style="background:var(--bg); padding:6px 12px; font-weight:600; font-size:13px; border-bottom:1px solid var(--border);">
-                  🕐 <span x-text="formatSlotHours(slot.start_hour, slot.end_hour, r.target_date)"></span>
+            <template x-for="summitGroup in dayGroup.summits" :key="summitGroup.summitId">
+              <div class="summit-group">
+                <div class="summit-group-header">
+                  <span class="summit-group-name" x-text="summitGroup.summitName"></span>
+                  <span class="summit-wind-max" x-text="'vent max : ' + summitGroup.maxWindKmh.toFixed(0) + ' km/h'"></span>
+                  <a
+                    :href="'https://www.windy.com/?' + summitGroup.lat + ',' + summitGroup.lon + ',10'"
+                    target="_blank"
+                    style="font-size:12px;color:var(--primary);text-decoration:none;"
+                  >Windy ↗</a>
                 </div>
-                <table style="margin:0;">
-                  <thead>
-                    <tr>
-                      <th>Altitude</th>
-                      <th>Moy</th>
-                      <th>Max</th>
-                      <th>Direction</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <template x-for="w in slot.wind_by_altitude" :key="w.altitude_m">
-                      <tr>
-                        <td><strong x-text="w.altitude_m + ' m'"></strong></td>
-                        <td x-text="w.mean_speed_kmh.toFixed(0) + ' km/h'" class="calm-hours"></td>
-                        <td x-text="w.max_speed_kmh.toFixed(0) + ' km/h'" class="calm-hours"></td>
-                        <td x-text="degToCardinal(w.mean_direction_deg) + ' (' + w.mean_direction_deg.toFixed(0) + '°)'"></td>
-                      </tr>
-                    </template>
-                  </tbody>
-                </table>
+
+                <div x-show="summitGroup.slots.length === 0" class="no-calm">Pas de créneau calme</div>
+
+                <template x-for="slot in summitGroup.slots" :key="slot.start_hour">
+                  <div class="slot-card">
+                    <div :class="'slot-card-header ' + slotQualityClass(slot)">
+                      🕐 <span x-text="formatSlotHours(slot.start_hour, slot.end_hour, dayGroup.date)"></span>
+                    </div>
+                    <table class="slot-table">
+                      <tbody>
+                        <template x-for="w in slot.wind_by_altitude" :key="w.altitude_m">
+                          <tr>
+                            <td class="alt-col" x-text="w.altitude_m + ' m'"></td>
+                            <td>
+                              <span :class="'wind-badge ' + windQualityClass(w.mean_speed_kmh)">
+                                <span x-text="windArrow(w.mean_direction_deg)"></span>
+                                <span x-text="w.mean_speed_kmh.toFixed(0) + ' km/h'"></span>
+                              </span>
+                            </td>
+                            <td style="color:var(--muted);font-size:12px;" x-text="'max ' + w.max_speed_kmh.toFixed(0) + ' km/h'"></td>
+                            <td style="font-size:12px;" x-text="degToCardinal(w.mean_direction_deg) + ' (' + w.mean_direction_deg.toFixed(0) + '°)'"></td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </template>
               </div>
             </template>
           </div>
         </template>
       </div>
 
-      <div class="results-empty" x-show="results.length === 0 && !checking">
+      <div class="results-empty" x-show="groupedResults.length === 0 && !checking">
         Aucune donnée — cliquez sur "Vérifier maintenant" pour lancer un check.
       </div>
     </div>
 
   </main>
 
-  <script>
-  const TZ = 'Europe/Paris'
+  <!-- Toast notifications -->
+  <div class="toast-container">
+    <template x-for="t in toasts" :key="t.id">
+      <div :class="'toast ' + t.type" x-text="t.msg"></div>
+    </template>
+  </div>
 
+  <script>
   function app() {
     return {
       tab: 'summits',
@@ -351,27 +538,88 @@
       },
       saved: false,
       results: [],
+      groupedResults: [],
+      lastCheckedAt: null,
       checking: false,
       _pollTimer: null,
       _pollCount: 0,
+      toasts: [],
+      _toastId: 0,
 
       async init() {
         await Promise.all([this.loadSummits(), this.loadSettings(), this.loadResults()])
       },
 
+      async fetchApi(url, opts = {}) {
+        try {
+          const r = await fetch(url, opts)
+          if (!r.ok) throw new Error(`HTTP ${r.status}`)
+          if (r.status === 204) return null
+          return await r.json()
+        } catch (e) {
+          this.showToast('error', 'Erreur : ' + e.message)
+          throw e
+        }
+      },
+
+      showToast(type, msg) {
+        const id = ++this._toastId
+        this.toasts.push({ id, type, msg })
+        setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id) }, 4000)
+      },
+
       async loadSummits() {
-        const r = await fetch('/api/summits/')
-        this.summits = await r.json()
+        const data = await this.fetchApi('/api/summits/')
+        if (data) this.summits = data
       },
 
       async loadSettings() {
-        const r = await fetch('/api/settings/')
-        this.settings = await r.json()
+        const data = await this.fetchApi('/api/settings/')
+        if (data) this.settings = data
       },
 
       async loadResults() {
-        const r = await fetch('/api/checks/last')
-        this.results = await r.json()
+        const data = await this.fetchApi('/api/checks/last')
+        if (data) {
+          this.results = data
+          this.groupedResults = this.buildGroupedResults(data)
+          if (data.length > 0) this.lastCheckedAt = data[0].checked_at
+        }
+      },
+
+      buildGroupedResults(results) {
+        if (!results.length) return []
+        const checkDay = results[0].checked_at.slice(0, 10)
+
+        const byDate = {}
+        for (const r of results) {
+          if (!byDate[r.target_date]) byDate[r.target_date] = []
+          byDate[r.target_date].push(r)
+        }
+
+        return Object.keys(byDate).sort().map(date => {
+          const dayResults = byDate[date]
+          const diff = Math.round((new Date(date) - new Date(checkDay)) / 86400000)
+          const dayName = new Date(date).toLocaleDateString('fr-FR', { weekday: 'long' })
+          const capitalDay = dayName.charAt(0).toUpperCase() + dayName.slice(1)
+          const label = diff === 0 ? "Aujourd'hui" : diff === 1 ? `Demain (${capitalDay})` : `Dans ${diff} jours (${capitalDay})`
+          const labelClass = diff === 0 ? 'today' : diff === 1 ? 'tomorrow' : 'future'
+          const totalSlots = dayResults.reduce((s, r) => s + r.calm_slots.length, 0)
+
+          const summits = dayResults.map(r => {
+            const summit = this.summits.find(s => s.id === r.summit_id)
+            return {
+              summitId: r.summit_id,
+              summitName: summit ? summit.name : `#${r.summit_id}`,
+              lat: summit ? summit.lat : 0,
+              lon: summit ? summit.lon : 0,
+              maxWindKmh: r.max_wind_kmh,
+              slots: r.calm_slots,
+            }
+          })
+
+          return { date, label, labelClass, totalSlots, summits }
+        })
       },
 
       openAddForm() {
@@ -408,51 +656,61 @@
           enabled: this.form.enabled,
         }
         if (this.editingId) {
-          await fetch(`/api/summits/${this.editingId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+          await this.fetchApi(`/api/summits/${this.editingId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
         } else {
-          await fetch('/api/summits/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+          await this.fetchApi('/api/summits/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
         }
         this.closeForm()
         await this.loadSummits()
       },
 
       async deleteSummit(id) {
-        await fetch(`/api/summits/${id}`, { method: 'DELETE' })
+        const summit = this.summits.find(s => s.id === id)
+        if (!confirm(`Supprimer "${summit?.name ?? id}" ?`)) return
+        await this.fetchApi(`/api/summits/${id}`, { method: 'DELETE' })
         await this.loadSummits()
       },
 
       async toggle(id) {
-        await fetch(`/api/summits/${id}/toggle`, { method: 'PATCH' })
+        await this.fetchApi(`/api/summits/${id}/toggle`, { method: 'PATCH' })
         await this.loadSummits()
       },
 
       async saveSettings() {
-        await fetch('/api/settings/', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.settings) })
+        await this.fetchApi('/api/settings/', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.settings),
+        })
         this.saved = true
         setTimeout(() => { this.saved = false }, 2000)
       },
 
       async triggerCheck() {
         this.checking = true
-        await fetch('/api/checks/now', { method: 'POST' })
+        const prevCheckedAt = this.lastCheckedAt
+        await this.fetchApi('/api/checks/now', { method: 'POST' })
         this._pollCount = 0
         this._pollTimer = setInterval(async () => {
           this._pollCount++
           await this.loadResults()
-          if (this._pollCount >= 5) {
+          if (this.lastCheckedAt !== prevCheckedAt || this._pollCount >= 15) {
             clearInterval(this._pollTimer)
             this.checking = false
           }
         }, 2000)
       },
 
-      summitName(id) {
-        return this.summits.find(s => s.id === id)?.name ?? `#${id}`
-      },
-
-      // Convert UTC slot hours to local time string, e.g. "07h–10h (heure locale)"
       formatSlotHours(startUtc, endUtc, date) {
-        const tz = this.settings.timezone || TZ
+        const tz = this.settings.timezone || 'Europe/Paris'
         const fmt = h => {
           const d = new Date(`${date}T${String(h).padStart(2,'0')}:00:00Z`)
           return d.toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: tz }).replace(':', 'h')
@@ -460,32 +718,30 @@
         return `${fmt(startUtc)} – ${fmt(endUtc)} (heure locale)`
       },
 
-      dateLabelText(targetDate, checkedAt) {
-        const checkDay = checkedAt.slice(0, 10)
-        const diff = Math.round((new Date(targetDate) - new Date(checkDay)) / 86400000)
-        if (diff === 0) return 'Aujourd\'hui'
-        if (diff === 1) return 'Demain'
-        return `Dans ${diff} jours`
-      },
-
-      dateLabelClass(targetDate, checkedAt) {
-        const checkDay = checkedAt.slice(0, 10)
-        const diff = Math.round((new Date(targetDate) - new Date(checkDay)) / 86400000)
-        if (diff === 0) return 'today'
-        if (diff === 1) return 'tomorrow'
-        return 'future'
-      },
-
       formatDate(iso) {
         if (!iso) return ''
-        return new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+        return new Date(iso).toLocaleString('fr-FR', {
+          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+        })
       },
-
-      pad(n) { return String(n).padStart(2, '0') },
 
       degToCardinal(deg) {
         const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO']
         return dirs[Math.round(deg / 45) % 8]
+      },
+
+      windArrow(deg) {
+        const arrows = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖']
+        return arrows[Math.round(deg / 45) % 8]
+      },
+
+      windQualityClass(meanKmh) {
+        return meanKmh < 10 ? 'wind-calm' : 'wind-moderate'
+      },
+
+      slotQualityClass(slot) {
+        const maxMean = Math.max(...slot.wind_by_altitude.map(w => w.mean_speed_kmh))
+        return maxMean < 10 ? 'calm-good' : 'calm-ok'
       },
     }
   }

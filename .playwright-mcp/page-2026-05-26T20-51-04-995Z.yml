@@ -1,0 +1,25 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - heading "🪂 Paralert" [level=1] [ref=e3]
+    - generic [ref=e4]: Alertes conditions parapente
+  - navigation [ref=e5]:
+    - button "Sommets" [ref=e6] [cursor=pointer]
+    - button "Paramètres" [ref=e7] [cursor=pointer]
+    - button "Statut" [ref=e8] [cursor=pointer]
+  - main [ref=e9]:
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - heading "Sommets surveillés" [level=2] [ref=e12]
+        - button "+ Ajouter" [ref=e13] [cursor=pointer]
+      - table [ref=e14]:
+        - rowgroup [ref=e15]:
+          - row "Nom Lat Lon Altitudes Actif" [ref=e16]:
+            - columnheader "Nom" [ref=e17]
+            - columnheader "Lat" [ref=e18]
+            - columnheader "Lon" [ref=e19]
+            - columnheader "Altitudes" [ref=e20]
+            - columnheader "Actif" [ref=e21]
+            - columnheader [ref=e22]
+        - rowgroup [ref=e23]:
+          - row "Aucun sommet configuré" [ref=e24]:
+            - cell "Aucun sommet configuré" [ref=e25]
