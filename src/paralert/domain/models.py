@@ -1,4 +1,10 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+
+@dataclass(frozen=True)
+class SlotConfig:
+    start_hour: int  # heure locale (0–23)
+    end_hour: int    # heure locale (1–24), end_hour > start_hour
 
 
 @dataclass(frozen=True)
@@ -9,6 +15,7 @@ class Summit:
     lon: float
     altitudes_m: tuple[int, ...]
     enabled: bool = True
+    custom_slots: tuple[SlotConfig, ...] | None = None  # None = hérite des globaux
 
 
 @dataclass(frozen=True)
@@ -23,6 +30,7 @@ class Settings:
     only_off_peak: bool
     timezone: str  # e.g. "Europe/Paris"
     cloud_cover_max_pct: float  # 0–100
+    custom_slots: tuple[SlotConfig, ...] = field(default_factory=tuple)  # vide = fallback 3h auto
 
 
 @dataclass(frozen=True)
@@ -59,6 +67,7 @@ class CalmSlot:
     start_hour: int  # UTC (0, 3, 6, …, 21)
     end_hour: int  # UTC exclusive (3, 6, …, 24)
     wind_by_altitude: tuple[WindSlot, ...]
+    is_calm: bool = True
 
 
 @dataclass(frozen=True)
@@ -68,3 +77,4 @@ class CheckResult:
     calm_slots: tuple[CalmSlot, ...]
     max_wind_kmh: float  # max across all hours and altitudes
     checked_at: str  # ISO8601
+    all_slots: tuple[CalmSlot, ...] = field(default_factory=tuple)

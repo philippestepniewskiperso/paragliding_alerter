@@ -29,24 +29,49 @@ def find_calm_slots(
     off_peak_end_utc: int | None = None,
     off_peak_start_utc: int | None = None,
     cloud_cover_max_pct: float = 100.0,
+    custom_slots_utc: tuple[tuple[int, int], ...] | None = None,
+) -> tuple[CalmSlot, ...]:
+    """Returns only calm slots (is_calm=True). See find_all_slots for all slots with is_calm flag."""
+    return tuple(s for s in find_all_slots(
+        wind_data, threshold_kmh, date,
+        sunrise_utc=sunrise_utc, sunset_utc=sunset_utc,
+        require_no_snow=require_no_snow, only_off_peak=only_off_peak,
+        off_peak_end_utc=off_peak_end_utc, off_peak_start_utc=off_peak_start_utc,
+        cloud_cover_max_pct=cloud_cover_max_pct, custom_slots_utc=custom_slots_utc,
+    ) if s.is_calm)
+
+
+def find_all_slots(
+    wind_data: WindData,
+    threshold_kmh: float,
+    date: str,
+    *,
+    sunrise_utc: int | None = None,
+    sunset_utc: int | None = None,
+    require_no_snow: bool = False,
+    only_off_peak: bool = False,
+    off_peak_end_utc: int | None = None,
+    off_peak_start_utc: int | None = None,
+    cloud_cover_max_pct: float = 100.0,
+    custom_slots_utc: tuple[tuple[int, int], ...] | None = None,
 ) -> tuple[CalmSlot, ...]:
     """
-    Groups hours into SLOT_HOURS-wide windows.
-    A slot is calm if ALL hours in the slot at ALL altitudes have speed <= threshold,
-    and all optional filters pass.
+    Returns all configured slots that pass non-wind filters, each with is_calm set according
+    to whether ALL hours at ALL altitudes have speed <= threshold.
+    If custom_slots_utc is provided and non-empty, only those (start, end) windows are evaluated.
+    Otherwise falls back to SLOT_HOURS-wide windows covering 00–24.
     """
     slots: list[CalmSlot] = []
     altitudes = list(wind_data.hourly.keys())
 
-    for slot_start in range(0, 24, SLOT_HOURS):
-        slot_end = slot_start + SLOT_HOURS
-        slot_hours = list(range(slot_start, slot_end))
+    windows: list[tuple[int, int]]
+    if custom_slots_utc:
+        windows = list(custom_slots_utc)
+    else:
+        windows = [(s, s + SLOT_HOURS) for s in range(0, 24, SLOT_HOURS)]
 
-        # Filter: wind
-        speeds = [_hour_speed(wind_data, alt, date, h) for alt in altitudes for h in slot_hours]
-        known = [s for s in speeds if s is not None]
-        if not known or any(s > threshold_kmh for s in known):
-            continue
+    for slot_start, slot_end in windows:
+        slot_hours = list(range(slot_start, slot_end))
 
         # Filter: sunlight (entire slot must be in daylight)
         if sunrise_utc is not None and sunset_utc is not None:
@@ -90,7 +115,12 @@ def find_calm_slots(
             for alt in altitudes
         )
 
-        slots.append(CalmSlot(start_hour=slot_start, end_hour=slot_end, wind_by_altitude=wind_slots))
+        # is_calm: ALL known speeds <= threshold
+        speeds = [_hour_speed(wind_data, alt, date, h) for alt in altitudes for h in slot_hours]
+        known = [s for s in speeds if s is not None]
+        is_calm = bool(known) and all(s <= threshold_kmh for s in known)
+
+        slots.append(CalmSlot(start_hour=slot_start, end_hour=slot_end, wind_by_altitude=wind_slots, is_calm=is_calm))
 
     return tuple(slots)
 

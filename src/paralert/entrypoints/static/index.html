@@ -147,6 +147,16 @@
     .toggle input:checked + .toggle-slider:before { transform: translateX(16px); }
     .flash { color: var(--green); font-size: 13px; font-weight: 500; }
 
+    /* ── Slot list ── */
+    .slot-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+    .slot-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; }
+    .slot-item span { flex: 1; }
+    .slot-add-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .slot-add-row select { padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--surface); }
+    .slot-empty { color: var(--muted); font-size: 12px; font-style: italic; padding: 6px 2px; }
+    .badge.custom { background: #ede9fe; color: #6d28d9; font-size: 11px; padding: 2px 6px; }
+    .badge.inherited { background: #f3f4f6; color: var(--muted); font-size: 11px; padding: 2px 6px; }
+
     /* ── Status / Results ── */
     .results-empty { color: var(--muted); font-size: 13px; padding: 32px; text-align: center; }
 
@@ -189,8 +199,8 @@
       font-weight: 600;
       font-size: 13px;
     }
-    .slot-card-header.calm-good { background: var(--green-bg); }
-    .slot-card-header.calm-ok   { background: var(--yellow-bg); }
+    .slot-card-header.slot-calm     { background: var(--green-bg); color: #15803d; }
+    .slot-card-header.slot-not-calm { background: #fee2e2; color: #b91c1c; }
 
     .slot-table { width: 100%; border-collapse: collapse; }
     .slot-table td { padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
@@ -209,6 +219,7 @@
     }
     .wind-calm     { background: var(--green-bg); color: #15803d; }
     .wind-moderate { background: var(--yellow-bg); color: var(--yellow); }
+    .wind-high     { background: #fee2e2; color: #b91c1c; }
 
     /* ── Status bar ── */
     .status-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -286,6 +297,7 @@
                 <template x-for="a in s.altitudes_m" :key="a">
                   <span class="badge alt" x-text="a + 'm'" style="margin-right:3px;"></span>
                 </template>
+                <span x-show="s.custom_slots !== null" class="badge custom" style="margin-left:4px;">créneaux perso</span>
               </td>
               <td>
                 <button class="badge" :class="s.enabled ? 'on' : 'off'" @click="toggle(s.id)" x-text="s.enabled ? 'Actif' : 'Inactif'"></button>
@@ -315,6 +327,7 @@
               <template x-for="a in s.altitudes_m" :key="a">
                 <span class="badge alt" x-text="a + 'm'"></span>
               </template>
+              <span x-show="s.custom_slots !== null" class="badge custom">créneaux perso</span>
             </div>
             <div class="summit-card-actions">
               <button class="btn btn-ghost btn-sm" @click="openEditForm(s)">Modifier</button>
@@ -350,6 +363,44 @@
             </div>
           </div>
         </div>
+
+        <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+          <div class="toggle-row" style="margin-bottom:10px;">
+            <label style="font-size:13px;font-weight:500;">Créneaux personnalisés</label>
+            <label class="toggle">
+              <input type="checkbox" x-model="form.hasCustomSlots" @change="onToggleCustomSlots()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div x-show="form.hasCustomSlots">
+            <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Surcharge les créneaux globaux pour ce sommet. Heures en heure locale.</p>
+            <div class="slot-list">
+              <template x-for="(sc, i) in form.custom_slots" :key="i">
+                <div class="slot-item">
+                  <span x-text="padH(sc.start_hour) + 'h00 – ' + padH(sc.end_hour) + 'h00'"></span>
+                  <button class="btn btn-danger btn-sm" @click="form.custom_slots.splice(i, 1)">×</button>
+                </div>
+              </template>
+              <div class="slot-empty" x-show="form.custom_slots.length === 0">Aucun créneau — aucune vérification</div>
+            </div>
+            <div class="slot-add-row">
+              <select x-model.number="newSummitSlot.start_hour">
+                <template x-for="h in hoursRange(0, 23)" :key="h">
+                  <option :value="h" x-text="padH(h) + 'h00'"></option>
+                </template>
+              </select>
+              <span style="font-size:13px;color:var(--muted);">→</span>
+              <select x-model.number="newSummitSlot.end_hour">
+                <template x-for="h in hoursRange(1, 24)" :key="h">
+                  <option :value="h" x-text="padH(h) + 'h00'"></option>
+                </template>
+              </select>
+              <button class="btn btn-ghost btn-sm" @click="addSummitSlot()">+ Ajouter</button>
+            </div>
+          </div>
+          <p x-show="!form.hasCustomSlots" style="font-size:12px;color:var(--muted);">Hérite des créneaux globaux.</p>
+        </div>
+
         <div class="form-actions">
           <button class="btn btn-ghost" @click="closeForm()">Annuler</button>
           <button class="btn btn-primary" @click="saveSummit()">Enregistrer</button>
@@ -436,6 +487,34 @@
           </div>
         </div>
 
+        <div class="settings-section">
+          <h3>Créneaux par défaut</h3>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Heures en heure locale. Si vide : découpage automatique toutes les 3h.</p>
+          <div class="slot-list">
+            <template x-for="(sc, i) in settings.custom_slots" :key="i">
+              <div class="slot-item">
+                <span x-text="padH(sc.start_hour) + 'h00 – ' + padH(sc.end_hour) + 'h00'"></span>
+                <button class="btn btn-danger btn-sm" @click="settings.custom_slots.splice(i, 1)">×</button>
+              </div>
+            </template>
+            <div class="slot-empty" x-show="settings.custom_slots.length === 0">Aucun créneau — découpage automatique</div>
+          </div>
+          <div class="slot-add-row">
+            <select x-model.number="newSlot.start_hour">
+              <template x-for="h in hoursRange(0, 23)" :key="h">
+                <option :value="h" x-text="padH(h) + 'h00'"></option>
+              </template>
+            </select>
+            <span style="font-size:13px;color:var(--muted);">→</span>
+            <select x-model.number="newSlot.end_hour">
+              <template x-for="h in hoursRange(1, 24)" :key="h">
+                <option :value="h" x-text="padH(h) + 'h00'"></option>
+              </template>
+            </select>
+            <button class="btn btn-ghost btn-sm" @click="addGlobalSlot()">+ Ajouter</button>
+          </div>
+        </div>
+
         <div>
           <button class="btn btn-primary" data-action="save-settings" @click="saveSettings()">Enregistrer</button>
         </div>
@@ -476,12 +555,13 @@
                   >Windy ↗</a>
                 </div>
 
-                <div x-show="summitGroup.slots.length === 0" class="no-calm">Pas de créneau calme</div>
+                <div x-show="summitGroup.allSlots.length === 0" class="no-calm">Aucun créneau à afficher</div>
 
-                <template x-for="slot in summitGroup.slots" :key="slot.start_hour">
+                <template x-for="slot in summitGroup.allSlots" :key="slot.start_hour">
                   <div class="slot-card">
-                    <div :class="'slot-card-header ' + slotQualityClass(slot)">
-                      🕐 <span x-text="formatSlotHours(slot.start_hour, slot.end_hour, dayGroup.date)"></span>
+                    <div :class="'slot-card-header ' + slotHeaderClass(slot)">
+                      <span x-text="slot.is_calm ? '✓' : '✗'"></span>
+                      <span x-text="formatSlotHours(slot.start_hour, slot.end_hour, dayGroup.date)"></span>
                     </div>
                     <table class="slot-table">
                       <tbody>
@@ -529,13 +609,16 @@
       summits: [],
       showForm: false,
       editingId: null,
-      form: { name: '', lat: '', lon: '', altitudes_m: [], enabled: true },
+      form: { name: '', lat: '', lon: '', altitudes_m: [], enabled: true, hasCustomSlots: false, custom_slots: [] },
       settings: {
         ntfy_url: '', ntfy_topic: '', wind_calm_kmh: 15, cron_expression: '0 6 * * *',
         season_start: '04-15', season_end: '11-15',
         require_no_snow: true, only_off_peak: false,
         timezone: 'Europe/Paris', cloud_cover_max_pct: 50,
+        custom_slots: [],
       },
+      newSlot: { start_hour: 6, end_hour: 9 },
+      newSummitSlot: { start_hour: 6, end_hour: 9 },
       saved: false,
       results: [],
       groupedResults: [],
@@ -614,7 +697,7 @@
               lat: summit ? summit.lat : 0,
               lon: summit ? summit.lon : 0,
               maxWindKmh: r.max_wind_kmh,
-              slots: r.calm_slots,
+              allSlots: r.all_slots && r.all_slots.length > 0 ? r.all_slots : r.calm_slots,
             }
           })
 
@@ -624,13 +707,19 @@
 
       openAddForm() {
         this.editingId = null
-        this.form = { name: '', lat: '', lon: '', altitudes_m: [2000, 3000], enabled: true }
+        this.form = { name: '', lat: '', lon: '', altitudes_m: [2000, 3000], enabled: true, hasCustomSlots: false, custom_slots: [] }
+        this.newSummitSlot = { start_hour: 6, end_hour: 9 }
         this.showForm = true
       },
 
       openEditForm(s) {
         this.editingId = s.id
-        this.form = { name: s.name, lat: s.lat, lon: s.lon, altitudes_m: [...s.altitudes_m], enabled: s.enabled }
+        this.form = {
+          name: s.name, lat: s.lat, lon: s.lon, altitudes_m: [...s.altitudes_m], enabled: s.enabled,
+          hasCustomSlots: s.custom_slots !== null,
+          custom_slots: s.custom_slots ? s.custom_slots.map(sc => ({ ...sc })) : [],
+        }
+        this.newSummitSlot = { start_hour: 6, end_hour: 9 }
         this.showForm = true
       },
 
@@ -654,6 +743,7 @@
           lon: parseFloat(this.form.lon),
           altitudes_m: this.form.altitudes_m,
           enabled: this.form.enabled,
+          custom_slots: this.form.hasCustomSlots ? this.form.custom_slots : null,
         }
         if (this.editingId) {
           await this.fetchApi(`/api/summits/${this.editingId}`, {
@@ -736,12 +826,47 @@
       },
 
       windQualityClass(meanKmh) {
-        return meanKmh < 10 ? 'wind-calm' : 'wind-moderate'
+        if (meanKmh < 10) return 'wind-calm'
+        if (meanKmh < 20) return 'wind-moderate'
+        return 'wind-high'
+      },
+
+      slotHeaderClass(slot) {
+        return slot.is_calm ? 'slot-calm' : 'slot-not-calm'
       },
 
       slotQualityClass(slot) {
-        const maxMean = Math.max(...slot.wind_by_altitude.map(w => w.mean_speed_kmh))
-        return maxMean < 10 ? 'calm-good' : 'calm-ok'
+        return slot.is_calm ? 'slot-calm' : 'slot-not-calm'
+      },
+
+      padH(h) {
+        return String(h).padStart(2, '0')
+      },
+
+      hoursRange(from, to) {
+        const r = []
+        for (let i = from; i <= to; i++) r.push(i)
+        return r
+      },
+
+      addGlobalSlot() {
+        if (this.newSlot.end_hour <= this.newSlot.start_hour) {
+          this.showToast('error', "L'heure de fin doit être après l'heure de début")
+          return
+        }
+        this.settings.custom_slots.push({ start_hour: this.newSlot.start_hour, end_hour: this.newSlot.end_hour })
+      },
+
+      addSummitSlot() {
+        if (this.newSummitSlot.end_hour <= this.newSummitSlot.start_hour) {
+          this.showToast('error', "L'heure de fin doit être après l'heure de début")
+          return
+        }
+        this.form.custom_slots.push({ start_hour: this.newSummitSlot.start_hour, end_hour: this.newSummitSlot.end_hour })
+      },
+
+      onToggleCustomSlots() {
+        if (!this.form.hasCustomSlots) this.form.custom_slots = []
       },
     }
   }

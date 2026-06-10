@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from zoneinfo import ZoneInfo
 
-from paralert.domain.models import CheckResult
+from paralert.domain.models import CheckResult, SlotConfig
 from paralert.domain.ports import (
     CheckResultRepository,
     NotificationPort,
@@ -11,6 +11,7 @@ from paralert.domain.ports import (
     WeatherPort,
 )
 from paralert.domain.services import (
+    find_all_slots,
     find_calm_slots,
     max_wind_on_date,
     sunrise_sunset_utc,
@@ -46,6 +47,9 @@ class CheckConditionsUseCase:
                 summit.lat, summit.lon, summit.altitudes_m
             )
 
+            # Résolution créneaux: sommet > global > fallback auto
+            effective_slots = summit.custom_slots if summit.custom_slots is not None else settings.custom_slots
+
             for date in dates:
                 if not _in_season(date, settings.season_start, settings.season_end):
                     continue
@@ -54,6 +58,13 @@ class CheckConditionsUseCase:
                 off_peak_end, off_peak_start = _local_to_utc(
                     12, 17, date, settings.timezone
                 )
+
+                custom_slots_utc: tuple[tuple[int, int], ...] | None = None
+                if effective_slots:
+                    custom_slots_utc = tuple(
+                        _slot_local_to_utc(sc, date, settings.timezone)
+                        for sc in effective_slots
+                    )
 
                 calm_slots = find_calm_slots(
                     wind_data,
@@ -66,11 +77,27 @@ class CheckConditionsUseCase:
                     off_peak_end_utc=off_peak_end,
                     off_peak_start_utc=off_peak_start,
                     cloud_cover_max_pct=settings.cloud_cover_max_pct,
+                    custom_slots_utc=custom_slots_utc,
+                )
+
+                all_slots = find_all_slots(
+                    wind_data,
+                    settings.wind_calm_kmh,
+                    date,
+                    sunrise_utc=sunrise,
+                    sunset_utc=sunset,
+                    require_no_snow=settings.require_no_snow,
+                    only_off_peak=settings.only_off_peak,
+                    off_peak_end_utc=off_peak_end,
+                    off_peak_start_utc=off_peak_start,
+                    cloud_cover_max_pct=settings.cloud_cover_max_pct,
+                    custom_slots_utc=custom_slots_utc,
                 )
 
                 # Drop slots already past when checking today
                 if date == now.strftime("%Y-%m-%d"):
                     calm_slots = tuple(s for s in calm_slots if s.end_hour > now.hour)
+                    all_slots = tuple(s for s in all_slots if s.end_hour > now.hour)
                 max_wind = max_wind_on_date(wind_data, date)
 
                 result = CheckResult(
@@ -79,6 +106,7 @@ class CheckConditionsUseCase:
                     calm_slots=calm_slots,
                     max_wind_kmh=max_wind,
                     checked_at=checked_at,
+                    all_slots=all_slots,
                 )
                 self._results.save(result)
                 all_results.append(result)
@@ -108,3 +136,15 @@ def _local_to_utc(
     utc_end = naive_end.replace(tzinfo=tz).astimezone(timezone.utc).hour
     utc_start = naive_start.replace(tzinfo=tz).astimezone(timezone.utc).hour
     return utc_end, utc_start
+
+
+def _slot_local_to_utc(sc: SlotConfig, date: str, tz_name: str) -> tuple[int, int]:
+    """Convert a SlotConfig (local hours) to a (start_utc, end_utc) tuple.
+    Preserves duration: end_utc = start_utc + (end_hour - start_hour).
+    Handles end_hour=24 (midnight) by avoiding datetime(hour=24).
+    """
+    tz = ZoneInfo(tz_name)
+    naive_start = datetime.fromisoformat(f"{date}T{sc.start_hour:02d}:00:00")
+    utc_start = naive_start.replace(tzinfo=tz).astimezone(timezone.utc).hour
+    utc_end = utc_start + (sc.end_hour - sc.start_hour)
+    return utc_start, utc_end

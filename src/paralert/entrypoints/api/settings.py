@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends
 
-from paralert.domain.models import Settings
+from paralert.domain.models import Settings, SlotConfig
 from paralert.domain.ports import SettingsRepository
 from paralert.entrypoints.scheduler import reschedule
 
 from .deps import get_settings_repo
-from .schemas import AppSettingsRead, AppSettingsUpdate
+from .schemas import AppSettingsRead, AppSettingsUpdate, SlotConfigSchema
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -24,6 +24,7 @@ def get_settings(repo: SettingsRepository = Depends(get_settings_repo)):
         only_off_peak=s.only_off_peak,
         timezone=s.timezone,
         cloud_cover_max_pct=s.cloud_cover_max_pct,
+        custom_slots=[SlotConfigSchema(start_hour=sc.start_hour, end_hour=sc.end_hour) for sc in s.custom_slots],
     )
 
 
@@ -40,6 +41,7 @@ def update_settings(body: AppSettingsUpdate, repo: SettingsRepository = Depends(
         only_off_peak=body.only_off_peak,
         timezone=body.timezone,
         cloud_cover_max_pct=body.cloud_cover_max_pct,
+        custom_slots=tuple(SlotConfig(start_hour=sc.start_hour, end_hour=sc.end_hour) for sc in body.custom_slots),
     )
     repo.save(settings)
     reschedule(body.cron_expression)
