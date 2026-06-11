@@ -46,6 +46,7 @@ def get_last_results(repo: CheckResultRepository = Depends(get_results_repo)):
             all_slots=[_slot_to_read(s) for s in r.all_slots],
             max_wind_kmh=r.max_wind_kmh,
             checked_at=r.checked_at,
+            source=r.source,
         )
         for r in repo.last_by_summit()
     ]

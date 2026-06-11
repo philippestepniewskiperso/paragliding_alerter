@@ -25,7 +25,7 @@ class FakeWeather(WeatherPort):
     def __init__(self, speed: float):
         self._speed = speed
 
-    async def fetch_wind(self, lat, lon, altitudes_m) -> WindData:
+    async def fetch_wind(self, lat, lon, altitudes_m, *, meteociel_url=None) -> WindData:
         return WindData(
             hourly={
                 alt: {

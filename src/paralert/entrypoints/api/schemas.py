@@ -19,6 +19,7 @@ class SummitCreate(BaseModel):
     altitudes_m: list[int] = Field(min_length=1)
     enabled: bool = True
     custom_slots: list[SlotConfigSchema] | None = None
+    meteociel_url: str | None = None
 
 
 class SummitRead(BaseModel):
@@ -29,6 +30,7 @@ class SummitRead(BaseModel):
     altitudes_m: list[int]
     enabled: bool
     custom_slots: list[SlotConfigSchema] | None = None
+    meteociel_url: str | None = None
 
 
 class SummitUpdate(BaseModel):
@@ -38,6 +40,7 @@ class SummitUpdate(BaseModel):
     altitudes_m: list[int] = Field(min_length=1)
     enabled: bool
     custom_slots: list[SlotConfigSchema] | None = None
+    meteociel_url: str | None = None
 
 
 class AppSettingsRead(BaseModel):
@@ -90,3 +93,4 @@ class CheckResultRead(BaseModel):
     max_wind_kmh: float
     checked_at: str
     all_slots: list[CalmSlotRead] = []
+    source: str = "open-meteo"

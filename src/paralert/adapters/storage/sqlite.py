@@ -77,13 +77,19 @@ def _migrate(conn: sqlite3.Connection) -> None:
         """)
     if "all_slots" not in cols:
         conn.execute("ALTER TABLE check_results ADD COLUMN all_slots TEXT NOT NULL DEFAULT '[]'")
+    if "source" not in cols:
+        conn.execute("ALTER TABLE check_results ADD COLUMN source TEXT NOT NULL DEFAULT 'open-meteo'")
     summit_cols = [r[1] for r in conn.execute("PRAGMA table_info(summits)").fetchall()]
     if "custom_slots" not in summit_cols:
         conn.execute("ALTER TABLE summits ADD COLUMN custom_slots TEXT DEFAULT NULL")
+    if "meteociel_url" not in summit_cols:
+        conn.execute("ALTER TABLE summits ADD COLUMN meteociel_url TEXT DEFAULT NULL")
 
 
 def _row_to_summit(row: sqlite3.Row) -> Summit:
     raw_slots = row["custom_slots"]
+    keys = row.keys()
+    meteociel_url = row["meteociel_url"] if "meteociel_url" in keys else None
     return Summit(
         id=row["id"],
         name=row["name"],
@@ -92,6 +98,7 @@ def _row_to_summit(row: sqlite3.Row) -> Summit:
         altitudes_m=tuple(json.loads(row["altitudes_m"])),
         enabled=bool(row["enabled"]),
         custom_slots=_json_to_slot_configs(raw_slots) if raw_slots is not None else None,
+        meteociel_url=meteociel_url,
     )
 
 
@@ -157,8 +164,8 @@ class SqliteSummitRepository(SummitRepository):
         raw_slots = _slot_configs_to_json(summit.custom_slots) if summit.custom_slots is not None else None
         with _connect(self._db_path) as conn:
             cur = conn.execute(
-                "INSERT INTO summits (name, lat, lon, altitudes_m, enabled, custom_slots) VALUES (?, ?, ?, ?, ?, ?)",
-                (summit.name, summit.lat, summit.lon, json.dumps(list(summit.altitudes_m)), int(summit.enabled), raw_slots),
+                "INSERT INTO summits (name, lat, lon, altitudes_m, enabled, custom_slots, meteociel_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (summit.name, summit.lat, summit.lon, json.dumps(list(summit.altitudes_m)), int(summit.enabled), raw_slots, summit.meteociel_url),
             )
             row = conn.execute("SELECT * FROM summits WHERE id = ?", (cur.lastrowid,)).fetchone()
         return _row_to_summit(row)
@@ -167,8 +174,8 @@ class SqliteSummitRepository(SummitRepository):
         raw_slots = _slot_configs_to_json(summit.custom_slots) if summit.custom_slots is not None else None
         with _connect(self._db_path) as conn:
             conn.execute(
-                "UPDATE summits SET name=?, lat=?, lon=?, altitudes_m=?, enabled=?, custom_slots=? WHERE id=?",
-                (summit.name, summit.lat, summit.lon, json.dumps(list(summit.altitudes_m)), int(summit.enabled), raw_slots, summit.id),
+                "UPDATE summits SET name=?, lat=?, lon=?, altitudes_m=?, enabled=?, custom_slots=?, meteociel_url=? WHERE id=?",
+                (summit.name, summit.lat, summit.lon, json.dumps(list(summit.altitudes_m)), int(summit.enabled), raw_slots, summit.meteociel_url, summit.id),
             )
             row = conn.execute("SELECT * FROM summits WHERE id = ?", (summit.id,)).fetchone()
         return _row_to_summit(row)
@@ -225,8 +232,8 @@ class SqliteCheckResultRepository(CheckResultRepository):
     def save(self, result: CheckResult) -> None:
         with _connect(self._db_path) as conn:
             conn.execute(
-                "INSERT INTO check_results (checked_at, summit_id, target_date, calm_slots, max_wind_kmh, all_slots) VALUES (?, ?, ?, ?, ?, ?)",
-                (result.checked_at, result.summit_id, result.target_date, _calm_slots_to_json(result.calm_slots), result.max_wind_kmh, _calm_slots_to_json(result.all_slots)),
+                "INSERT INTO check_results (checked_at, summit_id, target_date, calm_slots, max_wind_kmh, all_slots, source) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (result.checked_at, result.summit_id, result.target_date, _calm_slots_to_json(result.calm_slots), result.max_wind_kmh, _calm_slots_to_json(result.all_slots), result.source),
             )
 
     def last_by_summit(self) -> list[CheckResult]:
@@ -250,6 +257,7 @@ class SqliteCheckResultRepository(CheckResultRepository):
                 max_wind_kmh=r["max_wind_kmh"],
                 checked_at=r["checked_at"],
                 all_slots=_json_to_calm_slots(r["all_slots"]),
+                source=r["source"] if "source" in r.keys() else "open-meteo",
             )
             for r in rows
         ]

@@ -17,7 +17,7 @@ def _to_read(s: Summit) -> SummitRead:
     return SummitRead(
         id=s.id, name=s.name, lat=s.lat, lon=s.lon,
         altitudes_m=list(s.altitudes_m), enabled=s.enabled,
-        custom_slots=custom_slots,
+        custom_slots=custom_slots, meteociel_url=s.meteociel_url,
     )
 
 
@@ -38,6 +38,7 @@ def add_summit(body: SummitCreate, uc: ManageSummitsUseCase = Depends(get_manage
         id=None, name=body.name, lat=body.lat, lon=body.lon,
         altitudes_m=tuple(body.altitudes_m), enabled=body.enabled,
         custom_slots=_slots_from_body(body.custom_slots),
+        meteociel_url=body.meteociel_url or None,
     )
     return _to_read(uc.add(summit))
 
@@ -49,6 +50,7 @@ def update_summit(id: int, body: SummitUpdate, uc: ManageSummitsUseCase = Depend
         id=id, name=body.name, lat=body.lat, lon=body.lon,
         altitudes_m=tuple(body.altitudes_m), enabled=body.enabled,
         custom_slots=_slots_from_body(body.custom_slots),
+        meteociel_url=body.meteociel_url or None,
     )
     return _to_read(uc.update(summit))
 

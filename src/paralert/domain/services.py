@@ -73,6 +73,16 @@ def find_all_slots(
     for slot_start, slot_end in windows:
         slot_hours = list(range(slot_start, slot_end))
 
+        # Skip slots with no wind data at all (e.g. coarse 6-hourly meteociel
+        # forecast not covering this window) — avoid fabricating 0 km/h slots.
+        has_data = any(
+            _hour_speed(wind_data, alt, date, h) is not None
+            for alt in altitudes
+            for h in slot_hours
+        )
+        if not has_data:
+            continue
+
         # Filter: sunlight (entire slot must be in daylight)
         if sunrise_utc is not None and sunset_utc is not None:
             if slot_start < sunrise_utc or slot_end > sunset_utc:

@@ -239,6 +239,9 @@
     .badge.off { background: rgba(255,255,255,.05); color: var(--faint); border-color: var(--border); }
     .badge.alt { background: rgba(76,201,240,.12); color: var(--sky); border-color: rgba(76,201,240,.28); font-family: var(--font-mono); font-weight: 600; }
     .badge.custom    { background: rgba(255,180,84,.13); color: var(--sunrise); border-color: rgba(255,180,84,.3); }
+    .badge.source    { font-weight: 600; letter-spacing: 0; }
+    .badge.src-openmeteo { background: rgba(76,201,240,.12); color: var(--sky);     border-color: rgba(76,201,240,.28); }
+    .badge.src-meteociel { background: rgba(255,180,84,.13); color: var(--sunrise); border-color: rgba(255,180,84,.3); }
     .badge.inherited { background: rgba(255,255,255,.05); color: var(--faint); border-color: var(--border); }
 
     /* ── Table (desktop) ── */
@@ -558,6 +561,10 @@
             <input name="lon" x-model="form.lon" placeholder="5.7667" type="number" step="any">
           </div>
           <div class="form-group form-full">
+            <label>URL Meteociel (fallback si open-meteo down)</label>
+            <input name="meteociel_url" x-model="form.meteociel_url" placeholder="https://www.meteociel.fr/tendances-haute-altitude/13375/lans_en_vercors.htm">
+          </div>
+          <div class="form-group form-full">
             <label>Altitudes surveillées</label>
             <div class="checkboxes">
               <label><input type="checkbox" data-alt="0" :checked="form.altitudes_m.includes(0)" @change="toggleAlt(0, $event.target.checked)"> 0 m</label>
@@ -752,6 +759,7 @@
               <div class="summit-group">
                 <div class="summit-group-header">
                   <span class="summit-group-name" x-text="summitGroup.summitName"></span>
+                  <span class="badge source" :class="summitGroup.source === 'meteociel' ? 'src-meteociel' : 'src-openmeteo'" x-text="sourceLabel(summitGroup.source)"></span>
                   <span class="summit-wind-max" x-text="'vent max : ' + summitGroup.maxWindKmh.toFixed(0) + ' km/h'"></span>
                   <a
                     class="windy-link"
@@ -825,7 +833,7 @@
       summits: [],
       showForm: false,
       editingId: null,
-      form: { name: '', lat: '', lon: '', altitudes_m: [], enabled: true, hasCustomSlots: false, custom_slots: [] },
+      form: { name: '', lat: '', lon: '', meteociel_url: '', altitudes_m: [], enabled: true, hasCustomSlots: false, custom_slots: [] },
       settings: {
         ntfy_url: '', ntfy_topic: '', wind_calm_kmh: 15, cron_expression: '0 6 * * *',
         season_start: '04-15', season_end: '11-15',
@@ -918,17 +926,18 @@
               lat: summit ? summit.lat : 0,
               lon: summit ? summit.lon : 0,
               maxWindKmh: r.max_wind_kmh,
+              source: r.source || 'open-meteo',
               allSlots: r.all_slots && r.all_slots.length > 0 ? r.all_slots : r.calm_slots,
             }
-          })
+          }).filter(sg => sg.allSlots.length > 0)  // hide summits with no forecast data for this day
 
           return { date, label, labelClass, totalSlots, summits }
-        })
+        }).filter(dg => dg.summits.length > 0)  // hide days with no data at all
       },
 
       openAddForm() {
         this.editingId = null
-        this.form = { name: '', lat: '', lon: '', altitudes_m: [2000, 3000], enabled: true, hasCustomSlots: false, custom_slots: [] }
+        this.form = { name: '', lat: '', lon: '', meteociel_url: '', altitudes_m: [2000, 3000], enabled: true, hasCustomSlots: false, custom_slots: [] }
         this.newSummitSlot = { start_hour: 6, end_hour: 9 }
         this.showForm = true
       },
@@ -936,7 +945,8 @@
       openEditForm(s) {
         this.editingId = s.id
         this.form = {
-          name: s.name, lat: s.lat, lon: s.lon, altitudes_m: [...s.altitudes_m], enabled: s.enabled,
+          name: s.name, lat: s.lat, lon: s.lon, meteociel_url: s.meteociel_url || '',
+          altitudes_m: [...s.altitudes_m], enabled: s.enabled,
           hasCustomSlots: s.custom_slots !== null,
           custom_slots: s.custom_slots ? s.custom_slots.map(sc => ({ ...sc })) : [],
         }
@@ -965,6 +975,7 @@
           altitudes_m: this.form.altitudes_m,
           enabled: this.form.enabled,
           custom_slots: this.form.hasCustomSlots ? this.form.custom_slots : null,
+          meteociel_url: this.form.meteociel_url || null,
         }
         if (this.editingId) {
           await this.fetchApi(`/api/summits/${this.editingId}`, {
@@ -1034,6 +1045,11 @@
         return new Date(iso).toLocaleString('fr-FR', {
           day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
         })
+      },
+
+      sourceLabel(src) {
+        if (src === 'meteociel') return '⛅ Meteociel'
+        return '🛰 Open-Meteo'
       },
 
       degToCardinal(deg) {

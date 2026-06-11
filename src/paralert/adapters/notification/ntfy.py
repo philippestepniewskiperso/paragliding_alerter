@@ -78,7 +78,8 @@ class NtfyNotifier(NotificationPort):
             for r in day_results:
                 summit = summit_by_id.get(r.summit_id)
                 summit_name = summit.name if summit else f"#{r.summit_id}"
-                lines.append(f"⛰  {summit_name}")
+                src_label = "Meteociel" if r.source == "meteociel" else "Open-Meteo"
+                lines.append(f"⛰  {summit_name} (source : {src_label})")
 
                 for slot in r.calm_slots:
                     hours_local = _slot_hours_local(
@@ -112,7 +113,9 @@ class NtfyNotifier(NotificationPort):
         live_settings: Settings = self._settings_fn()
         url = f"{live_settings.ntfy_url.rstrip('/')}/{live_settings.ntfy_topic}"
         headers = {
-            "Title": "Paralert — créneaux calmes",
+            # HTTP headers are latin-1 only; ntfy reads Title as UTF-8, so keep it
+            # ASCII to avoid both an httpx encode error and mojibake on the device.
+            "Title": "Paralert - creneaux calmes",
             "Priority": "default",
             "Tags": "paragliding,wind",
         }

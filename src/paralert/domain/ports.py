@@ -5,7 +5,12 @@ from .models import CheckResult, Settings, Summit, WindData
 class WeatherPort(ABC):
     @abstractmethod
     async def fetch_wind(
-        self, lat: float, lon: float, altitudes_m: tuple[int, ...]
+        self,
+        lat: float,
+        lon: float,
+        altitudes_m: tuple[int, ...],
+        *,
+        meteociel_url: str | None = None,
     ) -> WindData: ...
 
 

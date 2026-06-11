@@ -49,7 +49,8 @@ class CheckConditionsUseCase:
         for summit in all_summits:
             try:
                 wind_data = await self._weather.fetch_wind(
-                    summit.lat, summit.lon, summit.altitudes_m
+                    summit.lat, summit.lon, summit.altitudes_m,
+                    meteociel_url=summit.meteociel_url,
                 )
             except httpx.HTTPError as exc:
                 _log.warning("fetch_wind failed for summit %s (%s): %s", summit.id, summit.name, exc)
@@ -115,6 +116,7 @@ class CheckConditionsUseCase:
                     max_wind_kmh=max_wind,
                     checked_at=checked_at,
                     all_slots=all_slots,
+                    source=wind_data.source,
                 )
                 self._results.save(result)
                 all_results.append(result)

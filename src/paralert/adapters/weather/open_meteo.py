@@ -8,7 +8,14 @@ BASE_URL = "https://api.open-meteo.com/v1/forecast"
 
 
 class OpenMeteoWeather(WeatherPort):
-    async def fetch_wind(self, lat: float, lon: float, altitudes_m: tuple[int, ...]) -> WindData:
+    async def fetch_wind(
+        self,
+        lat: float,
+        lon: float,
+        altitudes_m: tuple[int, ...],
+        *,
+        meteociel_url: str | None = None,  # unused — open-meteo addresses by lat/lon
+    ) -> WindData:
         levels = [_ALTITUDE_TO_HPA[a] for a in altitudes_m if a in _ALTITUDE_TO_HPA]
         hourly_fields = [f for hpa in levels for f in (f"windspeed_{hpa}hPa", f"winddirection_{hpa}hPa")]
         hourly_fields += ["cloudcover", "precipitation", "snow_depth"]
@@ -55,4 +62,4 @@ class OpenMeteoWeather(WeatherPort):
             for t, cc, pr, sd in zip(times, cloud_covers, precipitations, snow_depths)
         }
 
-        return WindData(hourly=hourly, surface=surface)
+        return WindData(hourly=hourly, surface=surface, source="open-meteo")

@@ -16,6 +16,7 @@ class Summit:
     altitudes_m: tuple[int, ...]
     enabled: bool = True
     custom_slots: tuple[SlotConfig, ...] | None = None  # None = hérite des globaux
+    meteociel_url: str | None = None  # page "tendances haute altitude" — fallback si open-meteo down
 
 
 @dataclass(frozen=True)
@@ -52,6 +53,7 @@ class WindData:
     hourly: dict[int, dict[str, WindHour]]
     # {iso_datetime: SurfaceHour}
     surface: dict[str, SurfaceHour]
+    source: str = "open-meteo"  # data provider: "open-meteo" | "meteociel"
 
 
 @dataclass(frozen=True)
@@ -79,3 +81,4 @@ class CheckResult:
     max_wind_kmh: float  # max across all hours and altitudes
     checked_at: str  # ISO8601
     all_slots: tuple[CalmSlot, ...] = field(default_factory=tuple)
+    source: str = "open-meteo"  # data provider used for this result
