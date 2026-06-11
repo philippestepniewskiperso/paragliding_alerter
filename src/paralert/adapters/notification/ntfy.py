@@ -1,3 +1,4 @@
+import os
 from datetime import date as _date_cls, datetime, timezone
 from zoneinfo import ZoneInfo
 
@@ -83,7 +84,16 @@ class NtfyNotifier(NotificationPort):
                     hours_local = _slot_hours_local(
                         slot.start_hour, slot.end_hour, date, tz
                     )
-                    lines.append(f"  🕐 {hours_local} (heure locale)")
+                    if slot.wind_by_altitude and slot.calm_ceiling_m is not None:
+                        min_alt = min(w.altitude_m for w in slot.wind_by_altitude)
+                        flyable = (
+                            f"volable à {slot.calm_ceiling_m}m"
+                            if min_alt == slot.calm_ceiling_m
+                            else f"volable entre {min_alt}m et {slot.calm_ceiling_m}m"
+                        )
+                        lines.append(f"  🕐 {hours_local} — {flyable}")
+                    else:
+                        lines.append(f"  🕐 {hours_local}")
                     for w in slot.wind_by_altitude:
                         arrow = _wind_arrow(w.mean_direction_deg)
                         card = _deg_to_cardinal(w.mean_direction_deg)
@@ -101,13 +111,17 @@ class NtfyNotifier(NotificationPort):
 
         live_settings: Settings = self._settings_fn()
         url = f"{live_settings.ntfy_url.rstrip('/')}/{live_settings.ntfy_topic}"
+        headers = {
+            "Title": "Paralert — créneaux calmes",
+            "Priority": "default",
+            "Tags": "paragliding,wind",
+        }
+        base_url = os.getenv("PARALERT_BASE_URL", "").rstrip("/")
+        if base_url:
+            headers["Icon"] = f"{base_url}/static/favicon.png"
         async with httpx.AsyncClient(timeout=10.0) as client:
             await client.post(
                 url,
                 content=body.encode(),
-                headers={
-                    "Title": "Paralert — créneaux calmes",
-                    "Priority": "default",
-                    "Tags": "paragliding,wind",
-                },
+                headers=headers,
             )

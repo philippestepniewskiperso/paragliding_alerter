@@ -80,6 +80,7 @@ class CalmSlotRead(BaseModel):
     end_hour: int
     wind_by_altitude: list[WindSlotRead]
     is_calm: bool = True
+    calm_ceiling_m: int | None = None
 
 
 class CheckResultRead(BaseModel):

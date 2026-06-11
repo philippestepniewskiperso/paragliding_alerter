@@ -1,8 +1,12 @@
+import logging
 from datetime import datetime, timedelta, timezone
 
+import httpx
 from zoneinfo import ZoneInfo
 
 from paralert.domain.models import CheckResult, SlotConfig
+
+_log = logging.getLogger(__name__)
 from paralert.domain.ports import (
     CheckResultRepository,
     NotificationPort,
@@ -43,9 +47,13 @@ class CheckConditionsUseCase:
         all_summits = self._summits.list(enabled_only=True)
 
         for summit in all_summits:
-            wind_data = await self._weather.fetch_wind(
-                summit.lat, summit.lon, summit.altitudes_m
-            )
+            try:
+                wind_data = await self._weather.fetch_wind(
+                    summit.lat, summit.lon, summit.altitudes_m
+                )
+            except httpx.HTTPError as exc:
+                _log.warning("fetch_wind failed for summit %s (%s): %s", summit.id, summit.name, exc)
+                continue
 
             # Résolution créneaux: sommet > global > fallback auto
             effective_slots = summit.custom_slots if summit.custom_slots is not None else settings.custom_slots

@@ -115,12 +115,17 @@ def find_all_slots(
             for alt in altitudes
         )
 
-        # is_calm: ALL known speeds <= threshold
-        speeds = [_hour_speed(wind_data, alt, date, h) for alt in altitudes for h in slot_hours]
-        known = [s for s in speeds if s is not None]
-        is_calm = bool(known) and all(s <= threshold_kmh for s in known)
+        # is_calm: contiguous calm prefix from lowest altitude
+        calm_ceiling_m: int | None = None
+        for alt in sorted(altitudes):
+            known = [s for s in [_hour_speed(wind_data, alt, date, h) for h in slot_hours] if s is not None]
+            if known and all(s <= threshold_kmh for s in known):
+                calm_ceiling_m = alt
+            else:
+                break
+        is_calm = calm_ceiling_m is not None
 
-        slots.append(CalmSlot(start_hour=slot_start, end_hour=slot_end, wind_by_altitude=wind_slots, is_calm=is_calm))
+        slots.append(CalmSlot(start_hour=slot_start, end_hour=slot_end, wind_by_altitude=wind_slots, is_calm=is_calm, calm_ceiling_m=calm_ceiling_m))
 
     return tuple(slots)
 

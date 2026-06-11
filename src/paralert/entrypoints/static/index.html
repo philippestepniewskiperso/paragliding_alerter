@@ -4,246 +4,447 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Paralert</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #f5f5f5;
-      --surface: #ffffff;
-      --border: #e0e0e0;
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --danger: #dc2626;
-      --muted: #6b7280;
-      --text: #111827;
-      --green: #16a34a;
-      --yellow: #ca8a04;
-      --green-bg: #dcfce7;
-      --yellow-bg: #fef9c3;
-      --radius: 8px;
-      --shadow: 0 1px 3px rgba(0,0,0,.1);
+      /* ── Sky / twilight palette ── */
+      --bg-0: #070b18;
+      --bg-1: #0d1430;
+      --bg-2: #15204a;
+
+      --glass:        rgba(255,255,255,.045);
+      --glass-strong: rgba(255,255,255,.075);
+      --border:        rgba(255,255,255,.09);
+      --border-strong: rgba(255,255,255,.18);
+
+      --text:  #eef1fb;
+      --muted: #9aa6c8;
+      --faint: #6b769b;
+
+      --sky:    #4cc9f0;
+      --sky-2:  #4895ef;
+      --sunrise:#ffb454;
+      --coral:  #ff7a59;
+
+      --calm:    #34d399;  --calm-bg:   rgba(52,211,153,.13);
+      --warn:    #fbbf24;  --warn-bg:   rgba(251,191,36,.13);
+      --danger:  #fb7185;  --danger-bg: rgba(251,113,133,.13);
+
+      --grad-action: linear-gradient(135deg, var(--sunrise), var(--coral));
+      --grad-sky:    linear-gradient(135deg, var(--sky), var(--sky-2));
+
+      --radius: 14px;
+      --radius-sm: 9px;
+      --shadow: 0 18px 40px -20px rgba(0,0,0,.7);
+      --ring: 0 0 0 3px rgba(76,201,240,.28);
+
+      --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+      --font-body: 'Manrope', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
     }
 
-    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: var(--font-body);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      background:
+        radial-gradient(1100px 700px at 12% -8%, rgba(72,149,239,.22), transparent 60%),
+        radial-gradient(1000px 650px at 92% 4%, rgba(255,122,89,.16), transparent 55%),
+        radial-gradient(900px 800px at 50% 120%, rgba(52,211,153,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg-0), var(--bg-1) 45%, var(--bg-2));
+      background-attachment: fixed;
+      position: relative;
+      overflow-x: hidden;
+    }
+    /* fine grain overlay for atmosphere */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+      opacity: .5; mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+    }
+
+    /* fixed mountain ridge silhouette — brand identity at base */
+    .ridge {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      width: 100%; height: 34vh; max-height: 320px;
+      z-index: 0; pointer-events: none; opacity: .55;
+      color: var(--bg-0);
+    }
+    .ridge svg { width: 100%; height: 100%; display: block; }
+
+    main, header, nav { position: relative; z-index: 1; }
+
+    a { color: var(--sky); }
 
     /* ── Header ── */
     header {
-      background: var(--surface);
+      backdrop-filter: blur(18px) saturate(1.4);
+      -webkit-backdrop-filter: blur(18px) saturate(1.4);
+      background: linear-gradient(180deg, rgba(13,20,48,.85), rgba(13,20,48,.55));
       border-bottom: 1px solid var(--border);
-      padding: 0 24px;
+      padding: 0 28px;
       display: flex;
       align-items: center;
       gap: 16px;
-      height: 56px;
-      box-shadow: var(--shadow);
+      min-height: 70px;
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 20;
     }
-    header h1 { font-size: 18px; font-weight: 700; }
-    header .subtitle { font-size: 12px; color: var(--muted); }
+    header h1 {
+      font-family: var(--font-display);
+      font-size: 23px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      line-height: 1;
+    }
+    header h1 .logo {
+      height: 38px; width: 38px; object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(76,201,240,.45));
+    }
+    header .subtitle {
+      font-size: 12.5px; color: var(--muted); font-weight: 500;
+      padding-left: 16px; border-left: 1px solid var(--border);
+    }
+    header .header-spacer { flex: 1; }
+    header .live-dot {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11.5px; color: var(--muted); font-weight: 600;
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+    header .live-dot::before {
+      content: ''; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--calm); box-shadow: 0 0 0 0 rgba(52,211,153,.6);
+      animation: pulse 2.4s infinite;
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(52,211,153,.55); }
+      70%  { box-shadow: 0 0 0 9px rgba(52,211,153,0); }
+      100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+    }
 
-    /* ── Nav tabs ── */
+    /* ── Nav (segmented pill) ── */
     nav {
       display: flex;
       gap: 4px;
-      padding: 16px 24px 0;
+      margin: 22px auto 0;
+      max-width: 980px;
+      padding: 5px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      width: max-content;
+      max-width: calc(100% - 40px);
       overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
+    nav::-webkit-scrollbar { display: none; }
     nav button {
-      padding: 8px 16px;
+      padding: 9px 22px;
       border: none;
       background: none;
       cursor: pointer;
-      border-radius: var(--radius) var(--radius) 0 0;
+      border-radius: 99px;
       color: var(--muted);
-      font-size: 14px;
-      border-bottom: 2px solid transparent;
+      font-family: var(--font-body);
+      font-size: 13.5px;
+      font-weight: 600;
       white-space: nowrap;
       flex-shrink: 0;
+      transition: color .2s, background .2s, box-shadow .2s;
+      display: inline-flex; align-items: center; gap: 7px;
     }
-    nav button.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; background: var(--surface); }
+    nav button:hover { color: var(--text); }
+    nav button.active {
+      color: #0a1024;
+      background: var(--grad-sky);
+      box-shadow: 0 8px 22px -8px rgba(76,201,240,.6);
+    }
 
-    /* ── Main panel ── */
-    main { padding: 0 24px 40px; }
+    /* ── Main / panels ── */
+    main { padding: 26px 20px 60px; max-width: 980px; margin: 0 auto; }
     .panel {
-      background: var(--surface);
+      background: linear-gradient(180deg, var(--glass-strong), var(--glass));
       border: 1px solid var(--border);
-      border-radius: 0 var(--radius) var(--radius) var(--radius);
-      padding: 20px;
+      border-radius: var(--radius);
+      padding: 26px;
       box-shadow: var(--shadow);
+      backdrop-filter: blur(16px) saturate(1.3);
+      -webkit-backdrop-filter: blur(16px) saturate(1.3);
+      animation: rise .5s cubic-bezier(.2,.7,.2,1) both;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px) scale(.99); }
+      to   { opacity: 1; transform: none; }
     }
 
-    /* ── Toolbar ── */
-    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-    .toolbar h2 { font-size: 15px; font-weight: 600; }
+    /* ── Toolbar / headings ── */
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .toolbar h2, .status-bar h2 {
+      font-family: var(--font-display);
+      font-size: 19px; font-weight: 700; letter-spacing: -.015em;
+    }
 
     /* ── Buttons ── */
-    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border: none; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 500; transition: background .15s; }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
-    .btn-ghost  { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-    .btn-ghost:hover { background: var(--bg); }
-    .btn-danger { background: transparent; color: var(--danger); border: 1px solid transparent; }
-    .btn-danger:hover { background: #fef2f2; }
-    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border: 1px solid transparent;
+      border-radius: var(--radius-sm); cursor: pointer;
+      font-family: var(--font-body); font-size: 13px; font-weight: 600;
+      transition: transform .12s, box-shadow .2s, background .2s, border-color .2s, color .2s;
+    }
+    .btn:active { transform: translateY(1px) scale(.99); }
+    .btn-primary {
+      background: var(--grad-action); color: #2a1405;
+      box-shadow: 0 10px 26px -10px rgba(255,122,89,.7);
+    }
+    .btn-primary:hover { box-shadow: 0 14px 30px -10px rgba(255,122,89,.85); }
+    .btn-primary:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+    .btn-ghost {
+      background: var(--glass); color: var(--text); border-color: var(--border-strong);
+      backdrop-filter: blur(6px);
+    }
+    .btn-ghost:hover { background: var(--glass-strong); border-color: var(--sky); color: #fff; }
+    .btn-danger { background: transparent; color: var(--danger); border-color: transparent; }
+    .btn-danger:hover { background: var(--danger-bg); border-color: rgba(251,113,133,.3); }
+    .btn-sm { padding: 6px 13px; font-size: 12px; }
 
     /* ── Badges ── */
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
-    .badge.on  { background: #dcfce7; color: #15803d; }
-    .badge.off { background: #f3f4f6; color: var(--muted); }
-    .badge.alt { background: #eff6ff; color: #1d4ed8; font-size: 11px; padding: 2px 6px; }
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 10px; border-radius: 99px;
+      font-size: 11px; font-weight: 700; letter-spacing: .02em;
+      border: 1px solid transparent; cursor: default;
+      font-family: var(--font-body);
+    }
+    button.badge { cursor: pointer; transition: transform .12s, filter .2s; }
+    button.badge:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .badge.on  { background: var(--calm-bg); color: var(--calm); border-color: rgba(52,211,153,.32); }
+    .badge.off { background: rgba(255,255,255,.05); color: var(--faint); border-color: var(--border); }
+    .badge.alt { background: rgba(76,201,240,.12); color: var(--sky); border-color: rgba(76,201,240,.28); font-family: var(--font-mono); font-weight: 600; }
+    .badge.custom    { background: rgba(255,180,84,.13); color: var(--sunrise); border-color: rgba(255,180,84,.3); }
+    .badge.inherited { background: rgba(255,255,255,.05); color: var(--faint); border-color: var(--border); }
 
-    /* ── Desktop table ── */
-    table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-    th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border); font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: .05em; }
-    td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    /* ── Table (desktop) ── */
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left; padding: 0 14px 12px; font-size: 11px;
+      text-transform: uppercase; color: var(--faint); letter-spacing: .09em; font-weight: 700;
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tbody tr { transition: background .15s; }
+    tbody tr:hover td { background: rgba(255,255,255,.03); }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: var(--bg); }
+    .cell-name { font-weight: 700; font-size: 14.5px; }
+    .cell-coords { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
 
     /* ── Summit cards (mobile) ── */
     .summit-card {
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      margin-bottom: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      background: var(--glass);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex; flex-direction: column; gap: 10px;
     }
     .summit-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .summit-card-name { font-weight: 600; font-size: 14px; }
-    .summit-card-coords { font-size: 11px; color: var(--muted); }
-    .summit-card-alts { display: flex; gap: 4px; flex-wrap: wrap; }
-    .summit-card-actions { display: flex; gap: 6px; }
+    .summit-card-name { font-weight: 700; font-size: 15px; }
+    .summit-card-coords { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+    .summit-card-alts { display: flex; gap: 5px; flex-wrap: wrap; }
+    .summit-card-actions { display: flex; gap: 8px; }
 
-    /* ── Form ── */
-    .form-box { margin-top: 16px; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
-    .form-box h3 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .form-group { display: flex; flex-direction: column; gap: 4px; }
-    .form-group label { font-size: 12px; color: var(--muted); font-weight: 500; }
-    .form-group input, .form-group select { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--surface); width: 100%; }
-    .form-group input:focus, .form-group select:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
+    /* ── Forms ── */
+    .form-box {
+      margin-top: 22px; padding: 22px;
+      background: rgba(0,0,0,.22);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      animation: rise .35s cubic-bezier(.2,.7,.2,1) both;
+    }
+    .form-box h3 { font-family: var(--font-display); font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 11.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+    .form-group input, .form-group select, .slot-add-row select {
+      padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 13.5px;
+      background: rgba(0,0,0,.3); color: var(--text);
+      width: 100%; font-family: var(--font-body);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .form-group input::placeholder { color: var(--faint); }
+    .form-group input:focus, .form-group select:focus, .slot-add-row select:focus {
+      outline: none; border-color: var(--sky); box-shadow: var(--ring);
+    }
     .form-full { grid-column: 1 / -1; }
-    .checkboxes { display: flex; gap: 16px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
-    .checkboxes label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; }
-    .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; flex-wrap: wrap; }
+    .checkboxes { display: flex; gap: 10px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+    .checkboxes label {
+      display: inline-flex; align-items: center; gap: 7px; cursor: pointer; font-size: 13px;
+      padding: 7px 13px; border: 1px solid var(--border); border-radius: 99px;
+      background: var(--glass); transition: border-color .2s, background .2s;
+      font-family: var(--font-mono); font-weight: 600;
+    }
+    .checkboxes label:hover { border-color: var(--border-strong); }
+    input[type=checkbox] { accent-color: var(--sky); width: 15px; height: 15px; cursor: pointer; }
+    .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+    .hint { font-size: 12px; color: var(--muted); }
 
     /* ── Settings ── */
-    .settings-form { max-width: 560px; display: flex; flex-direction: column; gap: 14px; }
-    .settings-section { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px; }
-    .settings-section h3 { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; }
-    .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .toggle-row label:first-child { font-size: 13px; }
-    .toggle { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+    .settings-form { max-width: 620px; display: flex; flex-direction: column; gap: 8px; }
+    .settings-section { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 12px; }
+    .settings-section:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+    .settings-section h3 {
+      font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--sky);
+      text-transform: uppercase; letter-spacing: .1em; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      padding: 10px 0;
+    }
+    .toggle-row label:first-child { font-size: 13.5px; }
+    .toggle { position: relative; display: inline-block; width: 44px; height: 25px; flex-shrink: 0; }
     .toggle input { opacity: 0; width: 0; height: 0; }
-    .toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 20px; cursor: pointer; transition: background .2s; }
-    .toggle-slider:before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform .2s; }
-    .toggle input:checked + .toggle-slider { background: var(--primary); }
-    .toggle input:checked + .toggle-slider:before { transform: translateX(16px); }
-    .flash { color: var(--green); font-size: 13px; font-weight: 500; }
+    .toggle-slider {
+      position: absolute; inset: 0; background: rgba(255,255,255,.12);
+      border: 1px solid var(--border); border-radius: 99px; cursor: pointer; transition: background .25s, border-color .25s;
+    }
+    .toggle-slider:before {
+      content: ''; position: absolute; width: 17px; height: 17px; left: 3px; top: 3px;
+      background: #fff; border-radius: 50%; transition: transform .25s; box-shadow: 0 2px 6px rgba(0,0,0,.4);
+    }
+    .toggle input:checked + .toggle-slider { background: var(--grad-sky); border-color: transparent; }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(19px); }
+    .flash { color: var(--calm); font-size: 13px; font-weight: 700; }
 
-    /* ── Slot list ── */
-    .slot-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-    .slot-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; }
+    /* ── Slot editor list ── */
+    .slot-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
+    .slot-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 13px; background: var(--glass); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 13.5px; font-family: var(--font-mono); font-weight: 600;
+    }
     .slot-item span { flex: 1; }
-    .slot-add-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .slot-add-row select { padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--surface); }
-    .slot-empty { color: var(--muted); font-size: 12px; font-style: italic; padding: 6px 2px; }
-    .badge.custom { background: #ede9fe; color: #6d28d9; font-size: 11px; padding: 2px 6px; }
-    .badge.inherited { background: #f3f4f6; color: var(--muted); font-size: 11px; padding: 2px 6px; }
+    .slot-add-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .slot-add-row select { width: auto; }
+    .slot-empty { color: var(--muted); font-size: 12.5px; font-style: italic; padding: 8px 2px; }
 
-    /* ── Status / Results ── */
-    .results-empty { color: var(--muted); font-size: 13px; padding: 32px; text-align: center; }
+    /* ── Status / results ── */
+    .results-empty {
+      color: var(--muted); font-size: 14px; padding: 48px 20px; text-align: center;
+      border: 1px dashed var(--border); border-radius: var(--radius); background: var(--glass);
+    }
+    .status-bar { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; flex-wrap: wrap; }
+    .checked-at { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
 
-    .day-group { margin-bottom: 24px; }
+    .day-group { margin-bottom: 30px; animation: rise .5s cubic-bezier(.2,.7,.2,1) both; }
+    .day-group:nth-child(2) { animation-delay: .05s; }
+    .day-group:nth-child(3) { animation-delay: .1s; }
+    .day-group:nth-child(4) { animation-delay: .15s; }
     .day-group-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 0;
-      border-bottom: 2px solid var(--border);
-      margin-bottom: 12px;
-      flex-wrap: wrap;
+      display: flex; align-items: center; gap: 12px;
+      padding-bottom: 12px; margin-bottom: 16px;
+      border-bottom: 1px solid var(--border); flex-wrap: wrap;
     }
-    .day-label { font-weight: 700; font-size: 15px; }
-    .day-label.today    { color: var(--primary); }
-    .day-label.tomorrow { color: var(--green); }
+    .day-label { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -.01em; }
+    .day-label.today    { color: var(--sunrise); }
+    .day-label.tomorrow { color: var(--sky); }
     .day-label.future   { color: var(--text); }
-    .day-date { font-size: 12px; color: var(--muted); }
+    .day-date { font-size: 12px; color: var(--faint); font-family: var(--font-mono); }
 
-    .summit-group { margin-bottom: 14px; }
-    .summit-group-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
+    .summit-group { margin-bottom: 18px; }
+    .summit-group-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .summit-group-name { font-weight: 700; font-size: 15px; }
+    .summit-wind-max { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+    .windy-link { font-size: 12px; color: var(--sky); text-decoration: none; font-weight: 600; }
+    .windy-link:hover { text-decoration: underline; }
+    .no-calm { color: var(--muted); font-style: italic; font-size: 12.5px; padding: 6px 0 6px 2px; }
+
+    /* ── Slot card ── */
+    .slot-card {
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      overflow: hidden; margin-bottom: 10px; background: var(--glass);
+      transition: transform .15s, border-color .2s, box-shadow .2s;
     }
-    .summit-group-name { font-weight: 600; font-size: 14px; }
-    .summit-wind-max { font-size: 12px; color: var(--muted); }
-    .no-calm { color: var(--muted); font-style: italic; font-size: 12px; padding: 4px 0 4px 2px; }
-
-    /* Slot card */
-    .slot-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 8px; }
+    .slot-card:hover { transform: translateY(-2px); border-color: var(--border-strong); box-shadow: 0 16px 30px -22px rgba(0,0,0,.9); }
     .slot-card-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 12px;
-      border-bottom: 1px solid var(--border);
-      font-weight: 600;
-      font-size: 13px;
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 15px; font-weight: 700; font-size: 13.5px;
+      font-family: var(--font-mono);
     }
-    .slot-card-header.slot-calm     { background: var(--green-bg); color: #15803d; }
-    .slot-card-header.slot-not-calm { background: #fee2e2; color: #b91c1c; }
+    .slot-card-header .slot-icon {
+      width: 22px; height: 22px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; flex-shrink: 0;
+    }
+    .slot-card-header.slot-calm     { background: var(--calm-bg); color: var(--calm); border-bottom: 1px solid rgba(52,211,153,.22); }
+    .slot-card-header.slot-calm .slot-icon     { background: rgba(52,211,153,.22); }
+    .slot-card-header.slot-not-calm { background: var(--danger-bg); color: var(--danger); border-bottom: 1px solid rgba(251,113,133,.2); }
+    .slot-card-header.slot-not-calm .slot-icon { background: rgba(251,113,133,.2); }
+    .slot-fly { font-size: 11px; opacity: .85; margin-left: auto; font-weight: 600; }
 
     .slot-table { width: 100%; border-collapse: collapse; }
-    .slot-table td { padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .slot-table td { padding: 9px 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
     .slot-table tr:last-child td { border-bottom: none; }
-    .slot-table .alt-col { font-weight: 600; width: 72px; }
+    .slot-table .alt-col { font-weight: 700; width: 78px; font-family: var(--font-mono); color: var(--muted); }
+    .dir-text { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+    .max-text { color: var(--faint); font-size: 12px; font-family: var(--font-mono); }
 
     .wind-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 12px;
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-weight: 500;
-      font-variant-numeric: tabular-nums;
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12.5px; padding: 3px 10px; border-radius: 99px;
+      font-weight: 700; font-variant-numeric: tabular-nums;
+      font-family: var(--font-mono); border: 1px solid transparent;
     }
-    .wind-calm     { background: var(--green-bg); color: #15803d; }
-    .wind-moderate { background: var(--yellow-bg); color: var(--yellow); }
-    .wind-high     { background: #fee2e2; color: #b91c1c; }
-
-    /* ── Status bar ── */
-    .status-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-    .checked-at { font-size: 12px; color: var(--muted); }
+    .wind-arrow { display: inline-block; transition: transform .3s; font-size: 13px; }
+    .wind-calm     { background: var(--calm-bg);   color: var(--calm);   border-color: rgba(52,211,153,.3); }
+    .wind-moderate { background: var(--warn-bg);   color: var(--warn);   border-color: rgba(251,191,36,.3); }
+    .wind-high     { background: var(--danger-bg); color: var(--danger); border-color: rgba(251,113,133,.3); }
 
     /* ── Spinner ── */
-    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(42,20,5,.35); border-top-color: #2a1405; border-radius: 50%; animation: spin .6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── Toast ── */
-    .toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 100; pointer-events: none; }
-    .toast { padding: 10px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,.15); pointer-events: auto; max-width: 320px; }
-    .toast.success { background: #16a34a; color: #fff; }
-    .toast.error   { background: var(--danger); color: #fff; }
+    .toast-container { position: fixed; bottom: 26px; right: 26px; display: flex; flex-direction: column; gap: 10px; z-index: 100; pointer-events: none; }
+    .toast {
+      padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
+      box-shadow: 0 18px 40px -12px rgba(0,0,0,.7); pointer-events: auto; max-width: 340px;
+      backdrop-filter: blur(14px); border: 1px solid var(--border-strong);
+      animation: toastIn .3s cubic-bezier(.2,.8,.2,1) both;
+    }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+    .toast.success { background: rgba(52,211,153,.92); color: #042417; }
+    .toast.error   { background: rgba(251,113,133,.95); color: #2a0410; }
 
     /* ── Responsive ── */
     .desktop-only { display: table; }
     .mobile-only  { display: none; }
 
-    @media (max-width: 640px) {
-      header { padding: 0 16px; }
-      nav { padding: 12px 16px 0; }
-      main { padding: 0 16px 40px; }
-      .panel { padding: 14px; }
+    @media (max-width: 680px) {
+      header { padding: 0 16px; min-height: 62px; }
+      header h1 { font-size: 19px; }
+      header h1 .logo { height: 32px; width: 32px; }
+      header .subtitle { display: none; }
+      nav { margin-top: 18px; }
+      main { padding: 20px 14px 60px; }
+      .panel { padding: 18px; }
       .desktop-only { display: none; }
       .mobile-only  { display: block; }
       .form-grid { grid-template-columns: 1fr; }
@@ -258,14 +459,16 @@
 <body x-data="app()" x-init="init()">
 
   <header>
-    <h1>🪂 Paralert</h1>
+    <h1><img src="/static/logo.png" alt="" class="logo"> Paralert</h1>
     <span class="subtitle">Alertes conditions parapente</span>
+    <span class="header-spacer"></span>
+    <span class="live-dot">En veille</span>
   </header>
 
   <nav>
-    <button :class="tab === 'summits'  ? 'active' : ''" @click="tab = 'summits'"  data-tab="summits">Sommets</button>
-    <button :class="tab === 'settings' ? 'active' : ''" @click="tab = 'settings'" data-tab="settings">Paramètres</button>
-    <button :class="tab === 'status'   ? 'active' : ''" @click="tab = 'status'"   data-tab="status">Statut</button>
+    <button :class="tab === 'summits'  ? 'active' : ''" @click="tab = 'summits'"  data-tab="summits">⛰ Sommets</button>
+    <button :class="tab === 'settings' ? 'active' : ''" @click="tab = 'settings'" data-tab="settings">⚙ Paramètres</button>
+    <button :class="tab === 'status'   ? 'active' : ''" @click="tab = 'status'"   data-tab="status">📊 Statut</button>
   </nav>
 
   <main>
@@ -291,25 +494,25 @@
         <tbody>
           <template x-for="s in summits" :key="s.id">
             <tr>
-              <td style="font-weight:600;" x-text="s.name"></td>
-              <td style="font-size:12px;color:var(--muted);" x-text="s.lat + ', ' + s.lon"></td>
+              <td class="cell-name" x-text="s.name"></td>
+              <td class="cell-coords" x-text="s.lat + ', ' + s.lon"></td>
               <td>
                 <template x-for="a in s.altitudes_m" :key="a">
-                  <span class="badge alt" x-text="a + 'm'" style="margin-right:3px;"></span>
+                  <span class="badge alt" x-text="a + 'm'" style="margin-right:4px;"></span>
                 </template>
                 <span x-show="s.custom_slots !== null" class="badge custom" style="margin-left:4px;">créneaux perso</span>
               </td>
               <td>
                 <button class="badge" :class="s.enabled ? 'on' : 'off'" @click="toggle(s.id)" x-text="s.enabled ? 'Actif' : 'Inactif'"></button>
               </td>
-              <td>
+              <td style="text-align:right;white-space:nowrap;">
                 <button class="btn btn-ghost btn-sm" @click="openEditForm(s)">Modifier</button>
                 <button class="btn btn-danger btn-sm" @click="deleteSummit(s.id)">Supprimer</button>
               </td>
             </tr>
           </template>
           <tr x-show="summits.length === 0">
-            <td colspan="5" class="results-empty">Aucun sommet configuré</td>
+            <td colspan="5" class="results-empty" style="border:none;background:none;">Aucun sommet configuré</td>
           </tr>
         </tbody>
       </table>
@@ -366,16 +569,16 @@
           </div>
         </div>
 
-        <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
-          <div class="toggle-row" style="margin-bottom:10px;">
-            <label style="font-size:13px;font-weight:500;">Créneaux personnalisés</label>
+        <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:18px;">
+          <div class="toggle-row" style="padding-top:0;">
+            <label style="font-size:13.5px;font-weight:600;">Créneaux personnalisés</label>
             <label class="toggle">
               <input type="checkbox" x-model="form.hasCustomSlots" @change="onToggleCustomSlots()">
               <span class="toggle-slider"></span>
             </label>
           </div>
-          <div x-show="form.hasCustomSlots">
-            <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Surcharge les créneaux globaux pour ce sommet. Heures en heure locale.</p>
+          <div x-show="form.hasCustomSlots" style="margin-top:8px;">
+            <p class="hint" style="margin-bottom:10px;">Surcharge les créneaux globaux pour ce sommet. Heures en heure locale.</p>
             <div class="slot-list">
               <template x-for="(sc, i) in form.custom_slots" :key="i">
                 <div class="slot-item">
@@ -391,7 +594,7 @@
                   <option :value="h" x-text="padH(h) + 'h00'"></option>
                 </template>
               </select>
-              <span style="font-size:13px;color:var(--muted);">→</span>
+              <span style="font-size:14px;color:var(--muted);">→</span>
               <select x-model.number="newSummitSlot.end_hour">
                 <template x-for="h in hoursRange(1, 24)" :key="h">
                   <option :value="h" x-text="padH(h) + 'h00'"></option>
@@ -400,7 +603,7 @@
               <button class="btn btn-ghost btn-sm" @click="addSummitSlot()">+ Ajouter</button>
             </div>
           </div>
-          <p x-show="!form.hasCustomSlots" style="font-size:12px;color:var(--muted);">Hérite des créneaux globaux.</p>
+          <p x-show="!form.hasCustomSlots" class="hint" style="margin-top:8px;">Hérite des créneaux globaux.</p>
         </div>
 
         <div class="form-actions">
@@ -417,22 +620,22 @@
         <span class="flash" x-show="saved" data-saved>Enregistré ✓</span>
       </div>
 
-      <div class="settings-form" style="margin-top: 16px;">
+      <div class="settings-form" style="margin-top: 8px;">
 
         <div class="settings-section">
-          <h3>Notifications</h3>
+          <h3>🔔 Notifications</h3>
           <div class="form-group">
             <label>URL ntfy</label>
             <input name="ntfy_url" x-model="settings.ntfy_url" placeholder="https://ntfy.sh">
           </div>
-          <div class="form-group" style="margin-top:10px;">
+          <div class="form-group" style="margin-top:12px;">
             <label>Topic ntfy</label>
             <input name="ntfy_topic" x-model="settings.ntfy_topic" placeholder="paralert">
           </div>
         </div>
 
         <div class="settings-section">
-          <h3>Conditions météo</h3>
+          <h3>🌤 Conditions météo</h3>
           <div class="form-grid">
             <div class="form-group">
               <label>Seuil vent calme (km/h)</label>
@@ -443,7 +646,7 @@
               <input name="cloud_cover_max_pct" x-model.number="settings.cloud_cover_max_pct" type="number" step="5" min="0" max="100">
             </div>
           </div>
-          <div class="toggle-row" style="margin-top:12px;">
+          <div class="toggle-row" style="margin-top:8px;">
             <label>Pas de neige au sommet</label>
             <label class="toggle">
               <input type="checkbox" name="require_no_snow" x-model="settings.require_no_snow">
@@ -453,7 +656,7 @@
         </div>
 
         <div class="settings-section">
-          <h3>Saison active</h3>
+          <h3>📅 Saison active</h3>
           <div class="form-grid">
             <div class="form-group">
               <label>Début de saison (MM-JJ)</label>
@@ -467,7 +670,7 @@
         </div>
 
         <div class="settings-section">
-          <h3>Heures hors thermiques</h3>
+          <h3>☀ Heures hors thermiques</h3>
           <div class="toggle-row">
             <label>Alertes uniquement matin (avant 12h) et soir (après 17h) — heure locale</label>
             <label class="toggle">
@@ -482,7 +685,7 @@
         </div>
 
         <div class="settings-section">
-          <h3>Planification</h3>
+          <h3>⏱ Planification</h3>
           <div class="form-group">
             <label>Cron (heure du check quotidien, UTC)</label>
             <input name="cron_expression" x-model="settings.cron_expression" placeholder="0 6 * * *">
@@ -490,8 +693,8 @@
         </div>
 
         <div class="settings-section">
-          <h3>Créneaux par défaut</h3>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Heures en heure locale. Si vide : découpage automatique toutes les 3h.</p>
+          <h3>🕐 Créneaux par défaut</h3>
+          <p class="hint" style="margin-bottom:12px;">Heures en heure locale. Si vide : découpage automatique toutes les 3h.</p>
           <div class="slot-list">
             <template x-for="(sc, i) in settings.custom_slots" :key="i">
               <div class="slot-item">
@@ -507,7 +710,7 @@
                 <option :value="h" x-text="padH(h) + 'h00'"></option>
               </template>
             </select>
-            <span style="font-size:13px;color:var(--muted);">→</span>
+            <span style="font-size:14px;color:var(--muted);">→</span>
             <select x-model.number="newSlot.end_hour">
               <template x-for="h in hoursRange(1, 24)" :key="h">
                 <option :value="h" x-text="padH(h) + 'h00'"></option>
@@ -517,7 +720,7 @@
           </div>
         </div>
 
-        <div>
+        <div style="margin-top:20px;">
           <button class="btn btn-primary" data-action="save-settings" @click="saveSettings()">Enregistrer</button>
         </div>
       </div>
@@ -526,7 +729,7 @@
     <!-- ═══ STATUT ═══ -->
     <div class="panel" x-show="tab === 'status'">
       <div class="status-bar">
-        <h2 style="font-size:15px;font-weight:600;">Résultats</h2>
+        <h2>Résultats</h2>
         <button class="btn btn-primary btn-sm" @click="triggerCheck()" :disabled="checking">
           <span x-show="checking" class="spinner" data-checking></span>
           <span x-text="checking ? 'Vérification…' : 'Vérifier maintenant'"></span>
@@ -551,9 +754,9 @@
                   <span class="summit-group-name" x-text="summitGroup.summitName"></span>
                   <span class="summit-wind-max" x-text="'vent max : ' + summitGroup.maxWindKmh.toFixed(0) + ' km/h'"></span>
                   <a
+                    class="windy-link"
                     :href="'https://www.windy.com/?' + summitGroup.lat + ',' + summitGroup.lon + ',10'"
                     target="_blank"
-                    style="font-size:12px;color:var(--primary);text-decoration:none;"
                   >Windy ↗</a>
                 </div>
 
@@ -562,8 +765,11 @@
                 <template x-for="slot in summitGroup.allSlots" :key="slot.start_hour">
                   <div class="slot-card">
                     <div :class="'slot-card-header ' + slotHeaderClass(slot)">
-                      <span x-text="slot.is_calm ? '✓' : '✗'"></span>
+                      <span class="slot-icon" x-text="slot.is_calm ? '✓' : '✗'"></span>
                       <span x-text="formatSlotHours(slot.start_hour, slot.end_hour, dayGroup.date)"></span>
+                      <template x-if="slot.is_calm && slot.calm_ceiling_m != null">
+                        <span class="slot-fly" x-text="flyableRange(slot)"></span>
+                      </template>
                     </div>
                     <table class="slot-table">
                       <tbody>
@@ -572,12 +778,12 @@
                             <td class="alt-col" x-text="w.altitude_m + ' m'"></td>
                             <td>
                               <span :class="'wind-badge ' + windQualityClass(w.mean_speed_kmh)">
-                                <span x-text="windArrow(w.mean_direction_deg)"></span>
+                                <span class="wind-arrow" :style="'transform: rotate(' + w.mean_direction_deg + 'deg)'">↑</span>
                                 <span x-text="w.mean_speed_kmh.toFixed(0) + ' km/h'"></span>
                               </span>
                             </td>
-                            <td style="color:var(--muted);font-size:12px;" x-text="'max ' + w.max_speed_kmh.toFixed(0) + ' km/h'"></td>
-                            <td style="font-size:12px;" x-text="degToCardinal(w.mean_direction_deg) + ' (' + w.mean_direction_deg.toFixed(0) + '°)'"></td>
+                            <td class="max-text" x-text="'max ' + w.max_speed_kmh.toFixed(0) + ' km/h'"></td>
+                            <td class="dir-text" x-text="degToCardinal(w.mean_direction_deg) + ' (' + w.mean_direction_deg.toFixed(0) + '°)'"></td>
                           </tr>
                         </template>
                       </tbody>
@@ -591,11 +797,19 @@
       </div>
 
       <div class="results-empty" x-show="groupedResults.length === 0 && !checking">
-        Aucune donnée — cliquez sur "Vérifier maintenant" pour lancer un check.
+        Aucune donnée — cliquez sur « Vérifier maintenant » pour lancer un check.
       </div>
     </div>
 
   </main>
+
+  <!-- Mountain ridge silhouette -->
+  <div class="ridge" aria-hidden="true">
+    <svg viewBox="0 0 1440 320" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path fill="currentColor" d="M0,320 L0,170 L160,90 L300,200 L470,60 L560,150 L720,30 L880,180 L1010,110 L1180,210 L1290,120 L1440,190 L1440,320 Z" opacity="0.85"/>
+      <path fill="currentColor" d="M0,320 L0,240 L200,200 L380,270 L560,210 L760,280 L960,220 L1160,275 L1340,225 L1440,260 L1440,320 Z"/>
+    </svg>
+  </div>
 
   <!-- Toast notifications -->
   <div class="toast-container">
@@ -840,6 +1054,16 @@
 
       slotHeaderClass(slot) {
         return slot.is_calm ? 'slot-calm' : 'slot-not-calm'
+      },
+
+      flyableRange(slot) {
+        if (!slot.is_calm || slot.calm_ceiling_m == null) return ''
+        const alts = slot.wind_by_altitude.map(w => w.altitude_m)
+        if (!alts.length) return ''
+        const minAlt = Math.min(...alts)
+        return minAlt === slot.calm_ceiling_m
+          ? `volable à ${minAlt}m`
+          : `volable entre ${minAlt}m et ${slot.calm_ceiling_m}m`
       },
 
       slotQualityClass(slot) {

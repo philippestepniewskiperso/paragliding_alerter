@@ -68,6 +68,7 @@ class CalmSlot:
     end_hour: int  # UTC exclusive (3, 6, …, 24)
     wind_by_altitude: tuple[WindSlot, ...]
     is_calm: bool = True
+    calm_ceiling_m: int | None = None  # highest alt in contiguous calm prefix from lowest; None if not calm
 
 
 @dataclass(frozen=True)

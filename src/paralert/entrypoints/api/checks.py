@@ -23,6 +23,7 @@ def _slot_to_read(s) -> CalmSlotRead:
         start_hour=s.start_hour,
         end_hour=s.end_hour,
         is_calm=s.is_calm,
+        calm_ceiling_m=s.calm_ceiling_m,
         wind_by_altitude=[
             WindSlotRead(
                 altitude_m=w.altitude_m,
@@ -51,4 +52,8 @@ def get_last_results(repo: CheckResultRepository = Depends(get_results_repo)):
 
 
 async def _run(uc: CheckConditionsUseCase) -> None:
-    await uc.execute()
+    import logging
+    try:
+        await uc.execute()
+    except Exception:
+        logging.getLogger(__name__).exception("check_conditions background task failed")

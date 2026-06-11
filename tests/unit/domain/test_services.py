@@ -48,11 +48,24 @@ def test_windy_slot_excluded():
     assert all(s.start_hour >= 3 for s in slots)
 
 
-def test_one_altitude_windy_excludes_slot():
-    # 3000m is windy in slot 0-3
+def test_one_altitude_windy_limits_ceiling():
+    # 3000m windy in slot 0-3 → slot included (2000m calm) but ceiling=2000, not 3000
     wind = _wind({2000: _all_hours(10.0), 3000: {h: (20.0 if h < 3 else 8.0) for h in range(24)}})
     slots = find_calm_slots(wind, threshold_kmh=15, date=DATE)
-    assert all(s.start_hour >= 3 for s in slots)
+    slot_0_3 = next(s for s in slots if s.start_hour == 0)
+    assert slot_0_3.calm_ceiling_m == 2000
+    assert all(s.calm_ceiling_m == 3000 for s in slots if s.start_hour >= 3)
+
+
+def test_calm_ceiling_all_altitudes_calm():
+    wind = _wind({2000: _all_hours(10.0), 3000: _all_hours(8.0)})
+    slots = find_calm_slots(wind, threshold_kmh=15, date=DATE)
+    assert all(s.calm_ceiling_m == 3000 for s in slots)
+
+
+def test_calm_ceiling_none_when_lowest_windy():
+    wind = _wind({2000: _all_hours(50.0), 3000: _all_hours(5.0)})
+    assert find_calm_slots(wind, threshold_kmh=15, date=DATE) == ()
 
 
 def test_no_calm_slots():
