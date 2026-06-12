@@ -6,7 +6,7 @@ from paralert.domain.services import SLOT_HOURS, find_calm_slots, max_wind_on_da
 DATE = "2026-05-20"
 _EMPTY_SURFACE: dict = {}
 
-
+#pwet
 def _wind(speeds_by_altitude: dict[int, dict[int, float]], direction: float = 45.0) -> WindData:
     """Build WindData from {altitude: {hour: speed}} shorthand."""
     return WindData(
