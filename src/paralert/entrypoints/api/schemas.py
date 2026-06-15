@@ -1,4 +1,15 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+
+class SlotConfigSchema(BaseModel):
+    start_hour: int = Field(ge=0, lt=24)
+    end_hour: int = Field(gt=0, le=24)
+
+    @model_validator(mode="after")
+    def end_after_start(self) -> "SlotConfigSchema":
+        if self.end_hour <= self.start_hour:
+            raise ValueError("end_hour must be greater than start_hour")
+        return self
 
 
 class SummitCreate(BaseModel):
@@ -7,6 +18,8 @@ class SummitCreate(BaseModel):
     lon: float = Field(ge=-180, le=180)
     altitudes_m: list[int] = Field(min_length=1)
     enabled: bool = True
+    custom_slots: list[SlotConfigSchema] | None = None
+    meteociel_url: str | None = None
 
 
 class SummitRead(BaseModel):
@@ -16,6 +29,8 @@ class SummitRead(BaseModel):
     lon: float
     altitudes_m: list[int]
     enabled: bool
+    custom_slots: list[SlotConfigSchema] | None = None
+    meteociel_url: str | None = None
 
 
 class SummitUpdate(BaseModel):
@@ -24,6 +39,8 @@ class SummitUpdate(BaseModel):
     lon: float = Field(ge=-180, le=180)
     altitudes_m: list[int] = Field(min_length=1)
     enabled: bool
+    custom_slots: list[SlotConfigSchema] | None = None
+    meteociel_url: str | None = None
 
 
 class AppSettingsRead(BaseModel):
@@ -37,6 +54,7 @@ class AppSettingsRead(BaseModel):
     only_off_peak: bool
     timezone: str
     cloud_cover_max_pct: float
+    custom_slots: list[SlotConfigSchema] = []
 
 
 class AppSettingsUpdate(BaseModel):
@@ -50,6 +68,7 @@ class AppSettingsUpdate(BaseModel):
     only_off_peak: bool
     timezone: str
     cloud_cover_max_pct: float = Field(ge=0, le=100)
+    custom_slots: list[SlotConfigSchema] = []
 
 
 class WindSlotRead(BaseModel):
@@ -63,6 +82,8 @@ class CalmSlotRead(BaseModel):
     start_hour: int
     end_hour: int
     wind_by_altitude: list[WindSlotRead]
+    is_calm: bool = True
+    calm_ceiling_m: int | None = None
 
 
 class CheckResultRead(BaseModel):
@@ -71,3 +92,5 @@ class CheckResultRead(BaseModel):
     calm_slots: list[CalmSlotRead]
     max_wind_kmh: float
     checked_at: str
+    all_slots: list[CalmSlotRead] = []
+    source: str = "open-meteo"

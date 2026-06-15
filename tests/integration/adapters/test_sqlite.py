@@ -6,7 +6,7 @@ from paralert.adapters.storage.sqlite import (
     SqliteSummitRepository,
     init_db,
 )
-from paralert.domain.models import CheckResult, Settings, Summit
+from paralert.domain.models import CheckResult, Settings, SlotConfig, Summit
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ def _full_settings(**kwargs) -> Settings:
         ntfy_url="https://ntfy.sh", ntfy_topic="paralert", wind_calm_kmh=15.0,
         cron_expression="0 6 * * *", season_start="04-15", season_end="11-15",
         require_no_snow=True, only_off_peak=False, timezone="Europe/Paris",
-        cloud_cover_max_pct=50.0,
+        cloud_cover_max_pct=50.0, custom_slots=(),
     )
     return Settings(**(defaults | kwargs))
 
@@ -68,6 +68,34 @@ class TestSummitRepository:
         repo.delete(s.id)
         assert repo.list() == []
 
+    def test_add_with_custom_slots(self, db):
+        repo = SqliteSummitRepository(db)
+        slots = (SlotConfig(start_hour=6, end_hour=9), SlotConfig(start_hour=17, end_hour=20))
+        s = repo.add(_summit(custom_slots=slots))
+        assert s.custom_slots == slots
+        assert repo.get(s.id).custom_slots == slots
+
+    def test_add_without_custom_slots_is_none(self, db):
+        repo = SqliteSummitRepository(db)
+        s = repo.add(_summit())
+        assert s.custom_slots is None
+
+    def test_update_sets_custom_slots(self, db):
+        repo = SqliteSummitRepository(db)
+        s = repo.add(_summit())
+        slots = (SlotConfig(start_hour=5, end_hour=8),)
+        updated = Summit(id=s.id, name=s.name, lat=s.lat, lon=s.lon, altitudes_m=s.altitudes_m, enabled=s.enabled, custom_slots=slots)
+        result = repo.update(updated)
+        assert result.custom_slots == slots
+
+    def test_update_clears_custom_slots_to_none(self, db):
+        repo = SqliteSummitRepository(db)
+        slots = (SlotConfig(start_hour=6, end_hour=9),)
+        s = repo.add(_summit(custom_slots=slots))
+        cleared = Summit(id=s.id, name=s.name, lat=s.lat, lon=s.lon, altitudes_m=s.altitudes_m, enabled=s.enabled, custom_slots=None)
+        result = repo.update(cleared)
+        assert result.custom_slots is None
+
 
 class TestSettingsRepository:
     def test_defaults(self, db):
@@ -84,6 +112,18 @@ class TestSettingsRepository:
         new = _full_settings(ntfy_url="https://custom.ntfy", ntfy_topic="my-topic", wind_calm_kmh=20.0, cron_expression="0 7 * * *")
         repo.save(new)
         assert repo.get() == new
+
+    def test_defaults_custom_slots_empty(self, db):
+        repo = SqliteSettingsRepository(db)
+        s = repo.get()
+        assert s.custom_slots == ()
+
+    def test_save_and_get_custom_slots(self, db):
+        repo = SqliteSettingsRepository(db)
+        slots = (SlotConfig(start_hour=6, end_hour=9), SlotConfig(start_hour=17, end_hour=20))
+        new = _full_settings(custom_slots=slots)
+        repo.save(new)
+        assert repo.get().custom_slots == slots
 
 
 class TestCheckResultRepository:

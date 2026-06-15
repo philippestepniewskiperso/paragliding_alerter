@@ -18,34 +18,43 @@ def trigger_check_now(
     return {"started": True}
 
 
+def _slot_to_read(s) -> CalmSlotRead:
+    return CalmSlotRead(
+        start_hour=s.start_hour,
+        end_hour=s.end_hour,
+        is_calm=s.is_calm,
+        calm_ceiling_m=s.calm_ceiling_m,
+        wind_by_altitude=[
+            WindSlotRead(
+                altitude_m=w.altitude_m,
+                mean_speed_kmh=w.mean_speed_kmh,
+                max_speed_kmh=w.max_speed_kmh,
+                mean_direction_deg=w.mean_direction_deg,
+            )
+            for w in s.wind_by_altitude
+        ],
+    )
+
+
 @router.get("/last", response_model=list[CheckResultRead])
 def get_last_results(repo: CheckResultRepository = Depends(get_results_repo)):
     return [
         CheckResultRead(
             summit_id=r.summit_id,
             target_date=r.target_date,
-            calm_slots=[
-                CalmSlotRead(
-                    start_hour=s.start_hour,
-                    end_hour=s.end_hour,
-                    wind_by_altitude=[
-                        WindSlotRead(
-                            altitude_m=w.altitude_m,
-                            mean_speed_kmh=w.mean_speed_kmh,
-                            max_speed_kmh=w.max_speed_kmh,
-                            mean_direction_deg=w.mean_direction_deg,
-                        )
-                        for w in s.wind_by_altitude
-                    ],
-                )
-                for s in r.calm_slots
-            ],
+            calm_slots=[_slot_to_read(s) for s in r.calm_slots],
+            all_slots=[_slot_to_read(s) for s in r.all_slots],
             max_wind_kmh=r.max_wind_kmh,
             checked_at=r.checked_at,
+            source=r.source,
         )
         for r in repo.last_by_summit()
     ]
 
 
 async def _run(uc: CheckConditionsUseCase) -> None:
-    await uc.execute()
+    import logging
+    try:
+        await uc.execute()
+    except Exception:
+        logging.getLogger(__name__).exception("check_conditions background task failed")

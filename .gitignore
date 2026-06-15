@@ -8,3 +8,8 @@ dist/
 data/
 .env
 .idea/
+.opencode/
+.DS_Store
+
+# APM dependencies
+apm_modules/

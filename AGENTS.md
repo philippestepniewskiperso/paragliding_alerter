@@ -18,35 +18,7 @@ Outil d'alerte parapente: notifie via ntfy.sh quand les conditions de vent sont 
 
 ## Architecture hexagonale
 
-```
-src/paralert/
-├── domain/          # Zéro dépendance externe. Ne jamais importer adapters ici.
-│   ├── models.py    # Summit, Settings, WindData, WindHour, CalmSlot, WindSlot, CheckResult
-│   ├── ports.py     # ABCs: WeatherPort, SummitRepository, SettingsRepository,
-│   │                #       CheckResultRepository, NotificationPort
-│   └── services.py  # find_calm_slots(), max_wind_on_date() — fonctions pures
-│
-├── application/
-│   ├── check_conditions.py  # UseCase: fetch → find_calm_slots → notify → persist
-│   └── manage_summits.py    # UseCase: CRUD sommets
-│
-├── adapters/
-│   ├── weather/open_meteo.py      # impl WeatherPort — GET Open-Meteo hourly
-│   ├── storage/sqlite.py          # impl SummitRepo + SettingsRepo + CheckResultRepo
-│   └── notification/ntfy.py       # impl NotificationPort — POST ntfy.sh
-│
-└── entrypoints/
-    ├── api/                 # FastAPI app + routers
-    │   ├── __init__.py      # app, StaticFiles mount, GET /
-    │   ├── deps.py          # DI factories
-    │   ├── summits.py       # /api/summits
-    │   ├── settings.py      # /api/settings
-    │   ├── checks.py        # /api/checks
-    │   └── schemas.py       # Pydantic request/response models
-    ├── static/index.html    # UI Alpine.js — consomme /api/*
-    └── scheduler.py         # APScheduler + reschedule() appelé par PUT /api/settings
-```
-
+Le code suit le principe de l'architecture hexagonale.
 ---
 
 ## Domaine clé
@@ -141,7 +113,7 @@ make docker-up    # docker compose up
 - `uv add <pkg>` pour ajouter une dépendance (pas pip)
 - `uv add --dev <pkg>` pour les dépendances de dev
 - Après `uv add`: relancer `uv pip install -e .` si package pas importable
-- Debug l'UI en utilisant playwright
+- Debug l'UI en utilisant playwright SAUF EN CAS DE REVUE DE CODE
 
 ---
 

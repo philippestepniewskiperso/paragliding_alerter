@@ -100,6 +100,40 @@ class TestSummitsAPI:
         assert r.status_code == 200
         assert r.json()["enabled"] is False
 
+    def test_create_with_custom_slots(self, client):
+        payload = {
+            "name": "Peak",
+            "lat": 45.0,
+            "lon": 5.0,
+            "altitudes_m": [2000],
+            "enabled": True,
+            "custom_slots": [{"start_hour": 6, "end_hour": 9}, {"start_hour": 17, "end_hour": 20}],
+        }
+        r = client.post("/api/summits/", json=payload)
+        assert r.status_code == 201
+        data = r.json()
+        assert data["custom_slots"] == [{"start_hour": 6, "end_hour": 9}, {"start_hour": 17, "end_hour": 20}]
+
+    def test_create_without_custom_slots_is_null(self, client):
+        payload = {"name": "Peak", "lat": 45.0, "lon": 5.0, "altitudes_m": [2000], "enabled": True}
+        r = client.post("/api/summits/", json=payload)
+        assert r.status_code == 201
+        assert r.json()["custom_slots"] is None
+
+    def test_update_clears_custom_slots(self, client):
+        r = client.post(
+            "/api/summits/",
+            json={"name": "P", "lat": 45.0, "lon": 5.0, "altitudes_m": [2000], "enabled": True,
+                  "custom_slots": [{"start_hour": 6, "end_hour": 9}]},
+        )
+        id = r.json()["id"]
+        r = client.put(
+            f"/api/summits/{id}",
+            json={"name": "P", "lat": 45.0, "lon": 5.0, "altitudes_m": [2000], "enabled": True, "custom_slots": None},
+        )
+        assert r.status_code == 200
+        assert r.json()["custom_slots"] is None
+
 
 class TestSettingsAPI:
     def test_get_defaults(self, client):
@@ -125,6 +159,30 @@ class TestSettingsAPI:
         r = client.put("/api/settings/", json=payload)
         assert r.status_code == 200
         assert r.json()["wind_calm_kmh"] == 20.0
+
+    def test_get_defaults_custom_slots_empty(self, client):
+        r = client.get("/api/settings/")
+        assert r.status_code == 200
+        assert r.json()["custom_slots"] == []
+
+    def test_update_with_custom_slots(self, client):
+        payload = {
+            "ntfy_url": "https://ntfy.sh",
+            "ntfy_topic": "paralert",
+            "wind_calm_kmh": 15.0,
+            "cron_expression": "0 6 * * *",
+            "season_start": "04-15",
+            "season_end": "11-15",
+            "require_no_snow": True,
+            "only_off_peak": False,
+            "timezone": "Europe/Paris",
+            "cloud_cover_max_pct": 50.0,
+            "custom_slots": [{"start_hour": 6, "end_hour": 9}, {"start_hour": 17, "end_hour": 20}],
+        }
+        r = client.put("/api/settings/", json=payload)
+        assert r.status_code == 200
+        r2 = client.get("/api/settings/")
+        assert r2.json()["custom_slots"] == [{"start_hour": 6, "end_hour": 9}, {"start_hour": 17, "end_hour": 20}]
 
 
 class TestChecksAPI:

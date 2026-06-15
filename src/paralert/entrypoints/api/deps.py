@@ -6,6 +6,8 @@ from paralert.adapters.storage.sqlite import (
     SqliteSettingsRepository,
     SqliteSummitRepository,
 )
+from paralert.adapters.weather.fallback import FallbackWeather
+from paralert.adapters.weather.meteociel import MeteoCielWeather
 from paralert.adapters.weather.open_meteo import OpenMeteoWeather
 from paralert.application.check_conditions import CheckConditionsUseCase
 from paralert.application.manage_summits import ManageSummitsUseCase
@@ -41,7 +43,7 @@ def get_check_conditions_use_case() -> CheckConditionsUseCase:
     settings_repo = get_settings_repo()
     notifier = NtfyNotifier(settings_fn=settings_repo.get)
     return CheckConditionsUseCase(
-        weather=OpenMeteoWeather(),
+        weather=FallbackWeather(OpenMeteoWeather(), MeteoCielWeather()),
         summits=get_summit_repo(),
         settings=settings_repo,
         results=get_results_repo(),

@@ -10,6 +10,8 @@ from paralert.adapters.storage.sqlite import (
     SqliteSettingsRepository,
     SqliteSummitRepository,
 )
+from paralert.adapters.weather.fallback import FallbackWeather
+from paralert.adapters.weather.meteociel import MeteoCielWeather
 from paralert.adapters.weather.open_meteo import OpenMeteoWeather
 from paralert.application.check_conditions import CheckConditionsUseCase
 
@@ -23,7 +25,7 @@ JOB_ID = "daily_check"
 def _make_use_case() -> CheckConditionsUseCase:
     settings_repo = SqliteSettingsRepository(_db_path)
     return CheckConditionsUseCase(
-        weather=OpenMeteoWeather(),
+        weather=FallbackWeather(OpenMeteoWeather(), MeteoCielWeather()),
         summits=SqliteSummitRepository(_db_path),
         settings=settings_repo,
         results=SqliteCheckResultRepository(_db_path),

@@ -1,12 +1,12 @@
 import pytest
 
 from paralert.domain.models import SurfaceHour, WindData, WindHour
-from paralert.domain.services import find_calm_slots, max_wind_on_date
+from paralert.domain.services import SLOT_HOURS, find_calm_slots, max_wind_on_date
 
 DATE = "2026-05-20"
 _EMPTY_SURFACE: dict = {}
 
-
+#pwet
 def _wind(speeds_by_altitude: dict[int, dict[int, float]], direction: float = 45.0) -> WindData:
     """Build WindData from {altitude: {hour: speed}} shorthand."""
     return WindData(
@@ -48,11 +48,24 @@ def test_windy_slot_excluded():
     assert all(s.start_hour >= 3 for s in slots)
 
 
-def test_one_altitude_windy_excludes_slot():
-    # 3000m is windy in slot 0-3
+def test_one_altitude_windy_limits_ceiling():
+    # 3000m windy in slot 0-3 → slot included (2000m calm) but ceiling=2000, not 3000
     wind = _wind({2000: _all_hours(10.0), 3000: {h: (20.0 if h < 3 else 8.0) for h in range(24)}})
     slots = find_calm_slots(wind, threshold_kmh=15, date=DATE)
-    assert all(s.start_hour >= 3 for s in slots)
+    slot_0_3 = next(s for s in slots if s.start_hour == 0)
+    assert slot_0_3.calm_ceiling_m == 2000
+    assert all(s.calm_ceiling_m == 3000 for s in slots if s.start_hour >= 3)
+
+
+def test_calm_ceiling_all_altitudes_calm():
+    wind = _wind({2000: _all_hours(10.0), 3000: _all_hours(8.0)})
+    slots = find_calm_slots(wind, threshold_kmh=15, date=DATE)
+    assert all(s.calm_ceiling_m == 3000 for s in slots)
+
+
+def test_calm_ceiling_none_when_lowest_windy():
+    wind = _wind({2000: _all_hours(50.0), 3000: _all_hours(5.0)})
+    assert find_calm_slots(wind, threshold_kmh=15, date=DATE) == ()
 
 
 def test_no_calm_slots():
@@ -133,3 +146,56 @@ def test_off_peak_filter():
     slots = find_calm_slots(wind, threshold_kmh=15, date=DATE, only_off_peak=True, off_peak_end_utc=10, off_peak_start_utc=15)
     for s in slots:
         assert s.end_hour <= 10 or s.start_hour >= 15
+
+
+def test_custom_slots_utc_uses_provided_windows():
+    wind = _wind({2000: _all_hours(10.0)})
+    slots = find_calm_slots(wind, threshold_kmh=15, date=DATE, custom_slots_utc=((6, 9), (17, 20)))
+    assert len(slots) == 2
+    assert slots[0].start_hour == 6
+    assert slots[0].end_hour == 9
+    assert slots[1].start_hour == 17
+    assert slots[1].end_hour == 20
+
+
+def test_custom_slots_utc_empty_falls_back_to_default():
+    wind = _wind({2000: _all_hours(10.0)})
+    slots_custom = find_calm_slots(wind, threshold_kmh=15, date=DATE, custom_slots_utc=())
+    slots_default = find_calm_slots(wind, threshold_kmh=15, date=DATE)
+    assert slots_custom == slots_default
+    assert len(slots_custom) == 24 // SLOT_HOURS
+
+
+def test_custom_slots_utc_none_falls_back_to_default():
+    wind = _wind({2000: _all_hours(10.0)})
+    slots_none = find_calm_slots(wind, threshold_kmh=15, date=DATE, custom_slots_utc=None)
+    slots_default = find_calm_slots(wind, threshold_kmh=15, date=DATE)
+    assert slots_none == slots_default
+
+
+def test_custom_slots_utc_windy_window_excluded():
+    # 06-09 is windy, 17-20 is calm
+    hours = {h: (30.0 if 6 <= h < 9 else 5.0) for h in range(24)}
+    wind = _wind({2000: hours})
+    slots = find_calm_slots(wind, threshold_kmh=15, date=DATE, custom_slots_utc=((6, 9), (17, 20)))
+    assert len(slots) == 1
+    assert slots[0].start_hour == 17
+
+
+def test_custom_slots_utc_respects_all_filters():
+    # 06-09 is calm wind but has precipitation
+    surface = {
+        f"{DATE}T{h:02d}:00": SurfaceHour(
+            cloud_cover_pct=0.0,
+            precipitation_mm=1.0 if 6 <= h < 9 else 0.0,
+            snow_depth_m=0.0,
+        )
+        for h in range(24)
+    }
+    wind = WindData(
+        hourly={2000: {f"{DATE}T{h:02d}:00": WindHour(5.0, 45.0) for h in range(24)}},
+        surface=surface,
+    )
+    slots = find_calm_slots(wind, threshold_kmh=15, date=DATE, custom_slots_utc=((6, 9), (17, 20)))
+    assert len(slots) == 1
+    assert slots[0].start_hour == 17

@@ -8,8 +8,9 @@ from paralert.adapters.storage.sqlite import (
     SqliteSummitRepository,
     init_db,
 )
+from paralert.application.check_conditions import _slot_local_to_utc
 from paralert.application.check_conditions import CheckConditionsUseCase
-from paralert.domain.models import CheckResult, SurfaceHour, Summit, WindData, WindHour
+from paralert.domain.models import SlotConfig, SurfaceHour, Summit, WindData, WindHour
 from paralert.domain.ports import NotificationPort, WeatherPort
 
 _now = datetime.now(timezone.utc)
@@ -24,30 +25,30 @@ class FakeWeather(WeatherPort):
     def __init__(self, speed: float):
         self._speed = speed
 
-    async def fetch_wind(self, lat, lon, altitudes_m) -> WindData:
+    async def fetch_wind(self, lat, lon, altitudes_m, *, meteociel_url=None) -> WindData:
         return WindData(
             hourly={
                 alt: {
-                    f"{date}T{h:02d}:00": WindHour(speed_kmh=self._speed, direction_deg=45.0)
+                    f"{date}T{h:02d}:00": WindHour(
+                        speed_kmh=self._speed, direction_deg=45.0
+                    )
                     for date in DATES
                     for h in range(24)
                 }
                 for alt in altitudes_m
             },
             surface={
-                f"{date}T{h:02d}:00": _CALM_SURFACE
-                for date in DATES
-                for h in range(24)
+                f"{date}T{h:02d}:00": _CALM_SURFACE for date in DATES for h in range(24)
             },
         )
 
 
 class FakeNotifier(NotificationPort):
     def __init__(self):
-        self.calls: list[tuple] = []
+        self.summaries: list[tuple] = []
 
-    async def send(self, summit, result: CheckResult) -> None:
-        self.calls.append((summit, result))
+    async def send_summary(self, results, summits, settings) -> None:
+        self.summaries.append((results, summits, settings))
 
 
 @pytest.fixture
@@ -59,7 +60,16 @@ def db(tmp_path):
 
 @pytest.fixture
 def populated_db(db):
-    SqliteSummitRepository(db).add(Summit(id=None, name="Test Peak", lat=45.0, lon=5.0, altitudes_m=(2000, 3000), enabled=True))
+    SqliteSummitRepository(db).add(
+        Summit(
+            id=None,
+            name="Test Peak",
+            lat=45.0,
+            lon=5.0,
+            altitudes_m=(2000, 3000),
+            enabled=True,
+        )
+    )
     return db
 
 
@@ -77,27 +87,50 @@ def _make_use_case(db, weather, notifier) -> CheckConditionsUseCase:
 @pytest.mark.anyio
 async def test_calm_conditions_trigger_notification(populated_db):
     notifier = FakeNotifier()
-    results = await _make_use_case(populated_db, FakeWeather(speed=10.0), notifier).execute()
+    results = await _make_use_case(
+        populated_db, FakeWeather(speed=10.0), notifier
+    ).execute()
 
     # Results for dates within season (default 04-15 to 11-15) — today is 2026-05-21, all 7 days in season
     assert len(results) > 0
-    assert all(len(r.calm_slots) > 0 for r in results)
-    assert len(notifier.calls) == len(results)
+    # Today may have 0 calm slots if all slots are already past; future days always have calm slots
+    future_results = [r for r in results if r.target_date > DATE_TODAY]
+    assert all(len(r.calm_slots) > 0 for r in future_results)
+    assert len(notifier.summaries) == 1
+    all_notified = notifier.summaries[0][0]
+    assert len(all_notified) == len(results)
 
 
 @pytest.mark.anyio
 async def test_windy_conditions_no_notification(populated_db):
     notifier = FakeNotifier()
-    results = await _make_use_case(populated_db, FakeWeather(speed=50.0), notifier).execute()
+    results = await _make_use_case(
+        populated_db, FakeWeather(speed=50.0), notifier
+    ).execute()
 
     assert all(r.calm_slots == () for r in results)
-    assert notifier.calls == []
+    assert notifier.summaries == []
 
 
 @pytest.mark.anyio
 async def test_results_persisted(populated_db):
-    await _make_use_case(populated_db, FakeWeather(speed=10.0), FakeNotifier()).execute()
+    await _make_use_case(
+        populated_db, FakeWeather(speed=10.0), FakeNotifier()
+    ).execute()
 
     last = SqliteCheckResultRepository(populated_db).last_by_summit()
     # last_by_summit returns one entry per summit (latest checked_at), but multiple target_dates
     assert len(last) >= 1
+
+
+def test_slot_local_to_utc_end_hour_24():
+    # Europe/Paris = UTC+2 in summer
+    sc = SlotConfig(start_hour=22, end_hour=24)
+    start, end = _slot_local_to_utc(sc, "2026-06-10", "Europe/Paris")
+    assert end == start + 2  # duration preserved regardless of midnight crossing
+
+
+def test_slot_local_to_utc_normal():
+    sc = SlotConfig(start_hour=6, end_hour=9)
+    start, end = _slot_local_to_utc(sc, "2026-06-10", "Europe/Paris")
+    assert end - start == 3  # 3h duration preserved
