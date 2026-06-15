@@ -113,7 +113,7 @@ make docker-up    # docker compose up
 - `uv add <pkg>` pour ajouter une dépendance (pas pip)
 - `uv add --dev <pkg>` pour les dépendances de dev
 - Après `uv add`: relancer `uv pip install -e .` si package pas importable
-- Debug l'UI en utilisant playwright
+- Debug l'UI en utilisant playwright SAUF EN CAS DE REVUE DE CODE
 
 ---
 
