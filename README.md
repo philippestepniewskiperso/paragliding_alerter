@@ -2,7 +2,11 @@
 
 Paragliding wind conditions alert tool. Monitors configured mountain summits via [Open-Meteo](https://open-meteo.com) and sends push notifications via [ntfy.sh](https://ntfy.sh) when wind is calm.
 
-![UI screenshot](ui-screenshot.png)
+## Screenshots
+
+| Statut | Sommets | Paramètres |
+|--------|---------|------------|
+| ![Statut](screenshots/img.png) | ![Sommets](screenshots/img_1.png) | ![Paramètres](screenshots/img_2.png) |
 
 ## What it does
 
@@ -21,13 +25,27 @@ Paragliding wind conditions alert tool. Monitors configured mountain summits via
 
 ## Quickstart
 
-```bash
-# Install and run (dev)
-make
+### Docker (recommended)
 
-# Or with Docker
+```bash
+docker pull ghcr.io/philippestepniewskiperso/paragliding_alerter:latest
+docker run -d \
+  -p 8080:8080 \
+  -v $(pwd)/data:/data \
+  ghcr.io/philippestepniewskiperso/paragliding_alerter:latest
+```
+
+### Docker Compose
+
+```bash
 cp .env.example .env
-docker compose up
+docker compose up -d
+```
+
+### Local dev
+
+```bash
+make
 ```
 
 UI available at `http://localhost:8080`.
