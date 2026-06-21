@@ -786,7 +786,7 @@
                             <td class="alt-col" x-text="w.altitude_m + ' m'"></td>
                             <td>
                               <span :class="'wind-badge ' + windQualityClass(w.mean_speed_kmh)">
-                                <span class="wind-arrow" :style="'transform: rotate(' + w.mean_direction_deg + 'deg)'">↑</span>
+                                <span class="wind-arrow" :style="'transform: rotate(' + (w.mean_direction_deg + 180) + 'deg)'">↑</span>
                                 <span x-text="w.mean_speed_kmh.toFixed(0) + ' km/h'"></span>
                               </span>
                             </td>
